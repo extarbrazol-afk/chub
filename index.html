@@ -85,9 +85,15 @@
     #canvas-viewport.is-panning { cursor: grabbing !important; }
     #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; }
     #canvas-bg-grid { position: absolute; top: -10000px; left: -10000px; width: 20000px; height: 20000px; background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px); background-size: 24px 24px; pointer-events: none; }
+    
+    /* LINHAS DE ALINHAMENTO INTELIGENTE */
+    .guide-line { position: absolute; background-color: var(--accent-blue); z-index: 1000; pointer-events: none; display: none; opacity: 0.7; }
+    .guide-line.v-guide { width: 1px; height: 20000px; top: -10000px; }
+    .guide-line.h-guide { height: 1px; width: 20000px; left: -10000px; }
+
     #svg-layer { position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; pointer-events: none; z-index: 5; }
-    .node-box { position: absolute; width: 180px; height: 100px; border: 1.5px solid var(--node-border); border-radius: 12px; background-color: var(--node-bg); display: flex; align-items: center; justify-content: center; padding: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); z-index: 10; cursor: move; }
-    .node-box.selected { border-color: var(--accent-blue) !important; box-shadow: 0 0 15px rgba(52, 131, 250, 0.7) !important; }
+    .node-box { position: absolute; width: 180px; height: 100px; border: 1.5px solid var(--node-border); border-radius: 12px; background-color: var(--node-bg); display: flex; align-items: center; justify-content: center; padding: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); z-index: 10; cursor: move; transition: border-color 0.2s, box-shadow 0.2s; }
+    .node-box.selected { border-color: var(--accent-blue) !important; box-shadow: 0 0 15px rgba(52, 131, 250, 0.7) !important; z-index: 20; }
     .node-text { width: 100%; height: 100%; outline: none; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 0.95rem; color: var(--text-main); word-break: break-word; cursor: text; }
     .node-text:empty:before { content: attr(data-placeholder); color: var(--text-sub); opacity: 0.6; }
     .node-box .remove-btn { position: absolute; top: -8px; right: -8px; background: var(--arrow-delete); color: white; border-radius: 50%; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; z-index: 25; }
@@ -146,6 +152,11 @@
     <main id="canvas-viewport" onclick="deselectAll(event)">
       <div id="canvas-container">
         <div id="canvas-bg-grid"></div>
+        
+        <!-- LINHAS GUIAS DE ALINHAMENTO -->
+        <div id="guide-v" class="guide-line v-guide"></div>
+        <div id="guide-h" class="guide-line h-guide"></div>
+
         <svg id="svg-layer">
           <defs>
             <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
@@ -198,7 +209,7 @@
   </div>
 
   <script>
-    const SECURITY_PIN = "5t7gb7nb@";
+    const SECURITY_PIN = "1234";
 
     const DB_CONFIG = {
       binId: "6a8f27b1da38895dfe143e4e",
@@ -478,13 +489,83 @@
       elmnt.onmousedown = (e) => {
         selectNode(elmnt);
         if (e.target.classList.contains('node-text') || e.target.classList.contains('remove-btn') || e.target.classList.contains('anchor-point')) return;
-        p3 = e.clientX; p4 = e.clientY;
-        document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+        
+        p3 = e.clientX; 
+        p4 = e.clientY;
+
+        const vGuide = document.getElementById('guide-v');
+        const hGuide = document.getElementById('guide-h');
+        
+        // Pega os outros blocos na tela para criar o magnetismo (exclui o atual)
+        const otherNodes = Array.from(document.querySelectorAll('.node-box')).filter(n => n !== elmnt);
+
+        document.onmouseup = () => { 
+          document.onmouseup = null; 
+          document.onmousemove = null; 
+          
+          // Oculta as guias ao soltar o mouse
+          vGuide.style.display = 'none';
+          hGuide.style.display = 'none';
+        };
+
         document.onmousemove = (e) => {
-          p1 = (p3 - e.clientX) / zoomLevel; p2 = (p4 - e.clientY) / zoomLevel;
-          p3 = e.clientX; p4 = e.clientY;
-          elmnt.style.top = (elmnt.offsetTop - p2) + "px";
-          elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
+          p1 = (p3 - e.clientX) / zoomLevel; 
+          p2 = (p4 - e.clientY) / zoomLevel;
+          p3 = e.clientX; 
+          p4 = e.clientY;
+
+          let newX = elmnt.offsetLeft - p1;
+          let newY = elmnt.offsetTop - p2;
+          let w = elmnt.offsetWidth;
+          let h = elmnt.offsetHeight;
+          
+          const snapThreshold = 10; // Força do ímã (em pixels)
+          let snapX = null;
+          let snapY = null;
+
+          // Percorre os outros blocos verificando o alinhamento
+          for (let other of otherNodes) {
+            let oX = parseFloat(other.style.left);
+            let oY = parseFloat(other.style.top);
+            let oW = other.offsetWidth;
+            let oH = other.offsetHeight;
+
+            // MAGNETISMO EIXO X (Vertical Guide)
+            if (Math.abs(newX - oX) < snapThreshold) { 
+              newX = oX; snapX = oX; 
+            } else if (Math.abs((newX + w/2) - (oX + oW/2)) < snapThreshold) { 
+              newX = oX + oW/2 - w/2; snapX = oX + oW/2; 
+            } else if (Math.abs((newX + w) - (oX + oW)) < snapThreshold) { 
+              newX = oX + oW - w; snapX = oX + oW; 
+            }
+
+            // MAGNETISMO EIXO Y (Horizontal Guide)
+            if (Math.abs(newY - oY) < snapThreshold) { 
+              newY = oY; snapY = oY; 
+            } else if (Math.abs((newY + h/2) - (oY + oH/2)) < snapThreshold) { 
+              newY = oY + oH/2 - h/2; snapY = oY + oH/2; 
+            } else if (Math.abs((newY + h) - (oY + oH)) < snapThreshold) { 
+              newY = oY + oH - h; snapY = oY + oH; 
+            }
+          }
+
+          // Posiciona e exibe as linhas se houver alinhamento
+          if (snapX !== null) {
+            vGuide.style.left = snapX + 'px';
+            vGuide.style.display = 'block';
+          } else {
+            vGuide.style.display = 'none';
+          }
+
+          if (snapY !== null) {
+            hGuide.style.top = snapY + 'px';
+            hGuide.style.display = 'block';
+          } else {
+            hGuide.style.display = 'none';
+          }
+
+          elmnt.style.top = newY + "px";
+          elmnt.style.left = newX + "px";
           updateArrows();
         };
       };
