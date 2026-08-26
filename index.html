@@ -193,9 +193,9 @@
         <button class="btn" onclick="addNode()">+ Adicionar Retângulo</button>
         <button class="btn" id="connect-btn" onclick="toggleConnectMode()">➔ Conectar Blocos</button>
         
-        <!-- SELETOR DE ESTILO DE LINHA -->
         <select id="line-style-select" class="select-style" onchange="updateArrows()">
-          <option value="orthogonal">Estilo: Ortogonal (Árvore)</option>
+          <option value="tree">Estilo: Tronco Unificado (Barramento)</option>
+          <option value="orthogonal">Estilo: Ortogonal Padrão</option>
           <option value="straight">Estilo: Linha Reta</option>
         </select>
 
@@ -354,7 +354,7 @@
         id: 'folder_' + Date.now(),
         name: name,
         category: category,
-        diagramData: { nodeCount: 0, arrowCount: 0, zoomLevel: 1, panX: 0, panY: 0, lineStyle: 'orthogonal', nodes: [], arrows: [] }
+        diagramData: { nodeCount: 0, arrowCount: 0, zoomLevel: 1, panX: 0, panY: 0, lineStyle: 'tree', nodes: [], arrows: [] }
       };
 
       if (!globalStore.folders) globalStore.folders = [];
@@ -668,7 +668,7 @@
       hitbox.setAttribute("class", "arrow-hitbox"); path.setAttribute("class", "arrow-path");
       g.appendChild(hitbox); g.appendChild(path); svg.appendChild(g);
       const obj = { id, element: g, path, hitbox, fromNodeId: fromId, fromDir, toNodeId: toId, toDir };
-      hitbox.onclick = () => { g.remove(); arrows = arrows.filter(a => a.id !== id); };
+      hitbox.onclick = () => { g.remove(); arrows = arrows.filter(a => a.id !== id); updateArrows(); };
       arrows.push(obj); updateArrows();
     }
 
@@ -680,9 +680,19 @@
       return { x: l, y: t + h / 2 };
     }
 
-    /* DESENHO DINÂMICO DE LINHAS (ORTOGONAL E RETAS) */
+    /* RENDERIZAÇÃO DAS LINHAS (SUPORTE AO BARRAMENTO UNIFICADO) */
     function updateArrows() {
       const style = document.getElementById('line-style-select').value;
+
+      // Agrupa conexões filhas por nó/âncora pai no modo Tronco
+      const groups = {};
+      if (style === 'tree') {
+        arrows.forEach(a => {
+          const key = `${a.fromNodeId}_${a.fromDir}`;
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(a);
+        });
+      }
 
       arrows.forEach(a => {
         const f = document.getElementById(a.fromNodeId), t = document.getElementById(a.toNodeId);
@@ -692,20 +702,34 @@
         let d = "";
 
         if (style === 'straight') {
-          // Linha Reta direta entre pontos
           d = `M ${s.x} ${s.y} L ${e.x} ${e.y}`;
-        } else {
-          // Linha Ortogonal (Estilo Árvore/Ramificação)
+        } else if (style === 'tree') {
+          const groupKey = `${a.fromNodeId}_${a.fromDir}`;
+          const group = groups[groupKey];
+
+          // Se a âncora for inferior e for para conexões superiores
           if (a.fromDir === 'bottom' && a.toDir === 'top') {
-            const midY = s.y + (e.y - s.y) / 2;
-            d = `M ${s.x} ${s.y} V ${midY} H ${e.x} V ${e.y}`;
-          } else if (a.fromDir === 'left' || a.fromDir === 'right') {
-            const midX = s.x + (e.x - s.x) / 2;
-            d = `M ${s.x} ${s.y} H ${midX} V ${e.y} H ${e.x}`;
+            let busY = s.y + (e.y - s.y) / 2;
+            
+            // Se houver mais de um filho conectado a essa mesma âncora inferior, alinha a altura do barramento
+            if (group && group.length > 1) {
+              const targetYs = group.map(item => {
+                const targetNode = document.getElementById(item.toNodeId);
+                return targetNode ? getAnchorCoords(targetNode, item.toDir).y : e.y;
+              });
+              const minY = Math.min(...targetYs);
+              busY = s.y + (minY - s.y) / 2;
+            }
+
+            d = `M ${s.x} ${s.y} V ${busY} H ${e.x} V ${e.y}`;
           } else {
             const midY = s.y + (e.y - s.y) / 2;
             d = `M ${s.x} ${s.y} V ${midY} H ${e.x} V ${e.y}`;
           }
+        } else {
+          // Ortogonal Padrão
+          const midY = s.y + (e.y - s.y) / 2;
+          d = `M ${s.x} ${s.y} V ${midY} H ${e.x} V ${e.y}`;
         }
 
         a.path.setAttribute("d", d); 
