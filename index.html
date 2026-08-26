@@ -14,6 +14,7 @@
       --node-bg: #1c1f2b;
       --node-border: #3b3f52;
       --accent-blue: #3483fa;
+      --accent-hover: #2563eb;
       --arrow-color: #6c7280;
       --arrow-delete: #ff4d4d;
       --anchor-color: #00ffcc;
@@ -21,19 +22,63 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
     body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-    #home-screen { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-    .chub-card { background-color: var(--card-bg); border: 1.5px solid var(--card-border); width: 280px; height: 160px; border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+
+    /* TELAS DA APLICAÇÃO */
+    .screen { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+    .screen.active { opacity: 1; visibility: visible; }
+
+    /* TELAS ESPECÍFICAS */
+    #home-screen { align-items: center; justify-content: center; cursor: pointer; z-index: 30; }
+    .chub-card { background-color: var(--card-bg); border: 1.5px solid var(--card-border); width: 280px; height: 160px; border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6); transition: transform 0.2s ease, border-color 0.2s ease; }
+    .chub-card:hover { transform: translateY(-4px); border-color: var(--accent-blue); }
     .chub-card h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: 4px; color: var(--text-main); }
-    #flowchart-screen { display: none; flex: 1; flex-direction: column; opacity: 0; transition: opacity 0.4s ease; height: 100vh; }
+
+    /* DASHBOARD DE PASTAS */
+    #folders-screen { background-color: var(--bg-color); padding: 40px; overflow-y: auto; z-index: 20; }
+    .folders-header { display: flex; justify-content: space-between; align-items: center; max-width: 1100px; margin: 0 auto 32px auto; width: 100%; border-bottom: 1px solid var(--card-border); padding-bottom: 20px; }
+    .folders-title h2 { font-size: 1.8rem; font-weight: 700; letter-spacing: 1px; }
+    .folders-title p { color: var(--text-sub); font-size: 0.9rem; margin-top: 4px; }
+    .folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+    
+    .folder-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 20px; cursor: pointer; position: relative; display: flex; flex-direction: column; justify-content: space-between; height: 160px; transition: all 0.2s ease; }
+    .folder-card:hover { border-color: var(--accent-blue); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
+    .folder-top { display: flex; justify-content: space-between; align-items: flex-start; }
+    .folder-icon { font-size: 2rem; color: var(--accent-blue); }
+    .folder-delete { background: transparent; border: none; color: var(--text-sub); font-size: 1.1rem; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
+    .folder-card:hover .folder-delete { opacity: 1; }
+    .folder-delete:hover { color: var(--arrow-delete); }
+    .folder-info .folder-name { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .folder-info .folder-category { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-blue); background: rgba(52, 131, 250, 0.1); padding: 4px 8px; border-radius: 6px; display: inline-block; }
+
+    /* CANVAS DO FLUXOGRAMA */
+    #flowchart-screen { z-index: 10; }
     header { padding: 12px 24px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; background-color: rgba(21, 23, 30, 0.95); z-index: 100; }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .active-folder-tag { font-size: 0.85rem; color: var(--accent-blue); background: rgba(52, 131, 250, 0.15); padding: 4px 10px; border-radius: 6px; font-weight: 600; }
     .toolbar { display: flex; gap: 10px; align-items: center; }
     .zoom-indicator, .db-status { font-size: 0.85rem; color: var(--text-sub); margin-left: 10px; }
     .db-status { color: #00ffcc; font-weight: bold; }
-    .btn { background: var(--node-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+    
+    .btn { background: var(--node-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: background 0.2s, border-color 0.2s; }
     .btn:hover, .btn.active { border-color: var(--accent-blue); background: #252938; }
+    .btn-primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
     .btn-save { border-color: #2e7d32; background: #1b5e20; }
     .btn-save:hover { background: #2e7d32; }
     .btn-back { background: transparent; border: 1px solid var(--card-border); color: var(--text-sub); }
+
+    /* MODAL DE NOVA PASTA */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.2s ease; }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 28px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
+    .modal h3 { margin-bottom: 20px; font-size: 1.3rem; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group input { width: 100%; background: var(--node-bg); border: 1px solid var(--card-border); padding: 10px 12px; border-radius: 8px; color: var(--text-main); font-size: 0.95rem; outline: none; }
+    .form-group input:focus { border-color: var(--accent-blue); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+
+    /* CANVAS ELEMENTS */
     #canvas-viewport { flex: 1; position: relative; background-color: var(--bg-color); overflow: hidden; user-select: none; cursor: grab; }
     #canvas-viewport.is-panning { cursor: grabbing !important; }
     #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; }
@@ -56,20 +101,36 @@
     .arrow-hitbox { stroke: transparent; stroke-width: 16px; fill: none; pointer-events: stroke; }
     .arrow-path { stroke: var(--arrow-color); stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; fill: none; pointer-events: none; }
     .arrow-group:hover .arrow-path { stroke: var(--arrow-delete); stroke-width: 3px; marker-end: url(#arrowhead-red); }
-    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-  <div id="home-screen" onclick="openFlowchart()">
+  <!-- TELA 1: CAPA -->
+  <div id="home-screen" class="screen active" onclick="showScreen('folders-screen')">
     <div class="chub-card">
       <h1>CHUB</h1>
     </div>
   </div>
 
-  <div id="flowchart-screen">
+  <!-- TELA 2: GERENCIADOR DE PASTAS -->
+  <div id="folders-screen" class="screen">
+    <div class="folders-header">
+      <div class="folders-title">
+        <h2>Gerenciador de Projetos</h2>
+        <p>Selecione uma pasta ou crie uma nova para trabalhar</p>
+      </div>
+      <button class="btn btn-primary" onclick="openFolderModal()">+ Nova Pasta</button>
+    </div>
+    <div class="folders-grid" id="folders-grid"></div>
+  </div>
+
+  <!-- TELA 3: FLUXOGRAMA -->
+  <div id="flowchart-screen" class="screen">
     <header>
-      <div class="logo">CHUB</div>
+      <div class="header-left">
+        <div class="logo" style="font-weight: bold; letter-spacing: 2px;">CHUB</div>
+        <div class="active-folder-tag" id="active-folder-tag">Pasta</div>
+      </div>
       <div class="toolbar">
         <button class="btn" onclick="addNode()">+ Adicionar Retângulo</button>
         <button class="btn" id="connect-btn" onclick="toggleConnectMode()">➔ Conectar Blocos</button>
@@ -77,7 +138,7 @@
         <span class="zoom-indicator" id="zoom-indicator">100%</span>
         <span class="db-status" id="db-status"></span>
       </div>
-      <button class="btn btn-back" onclick="closeFlowchart()">← Voltar</button>
+      <button class="btn btn-back" onclick="showScreen('folders-screen')">← Pastas</button>
     </header>
 
     <main id="canvas-viewport" onclick="deselectAll(event)">
@@ -97,11 +158,33 @@
     </main>
   </div>
 
+  <!-- MODAL DE CRIAR PASTA -->
+  <div class="modal-overlay" id="folder-modal">
+    <div class="modal">
+      <h3>Criar Nova Pasta</h3>
+      <div class="form-group">
+        <label>Nome da Pasta</label>
+        <input type="text" id="folder-name-input" placeholder="Ex: Arquitetura de API">
+      </div>
+      <div class="form-group">
+        <label>Categoria / Assunto</label>
+        <input type="text" id="folder-category-input" placeholder="Ex: Backend, UI/UX, Vendas">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-back" onclick="closeFolderModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="createFolder()">Criar Pasta</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const DB_CONFIG = {
       binId: "6a8f27b1da38895dfe143e4e",
       apiKey: "$2a$10$lrjAB/pBHe0LPTuQDuWNyO/paWbsAKeQaJ4hiJFauUbLL5/y4svHy"
     };
+
+    let globalStore = { folders: [] };
+    let currentFolderId = null;
 
     let nodeCount = 0, arrowCount = 0, arrows = [];
     let isConnectMode = false, selectedStartAnchor = null, selectedNode = null;
@@ -112,6 +195,139 @@
     const zoomIndicator = document.getElementById('zoom-indicator');
     const dbStatus = document.getElementById('db-status');
 
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+      if (screenId === 'folders-screen') {
+        loadFromDatabase();
+      }
+    }
+
+    /* SISTEMA DE PASTAS */
+    function openFolderModal() {
+      document.getElementById('folder-modal').classList.add('active');
+      document.getElementById('folder-name-input').focus();
+    }
+
+    function closeFolderModal() {
+      document.getElementById('folder-modal').classList.remove('active');
+      document.getElementById('folder-name-input').value = '';
+      document.getElementById('folder-category-input').value = '';
+    }
+
+    function createFolder() {
+      const name = document.getElementById('folder-name-input').value.trim();
+      const category = document.getElementById('folder-category-input').value.trim() || 'Geral';
+      if (!name) return alert('Por favor, digite um nome para a pasta.');
+
+      const newFolder = {
+        id: 'folder_' + Date.now(),
+        name: name,
+        category: category,
+        diagramData: { nodeCount: 0, arrowCount: 0, zoomLevel: 1, panX: 0, panY: 0, nodes: [], arrows: [] }
+      };
+
+      globalStore.folders.push(newFolder);
+      closeFolderModal();
+      saveToDatabase();
+      renderFolders();
+    }
+
+    function deleteFolder(e, folderId) {
+      e.stopPropagation();
+      if (confirm("Tem certeza que deseja excluir esta pasta e seu fluxograma?")) {
+        globalStore.folders = globalStore.folders.filter(f => f.id !== folderId);
+        saveToDatabase();
+        renderFolders();
+      }
+    }
+
+    function openFolder(folderId) {
+      currentFolderId = folderId;
+      const folder = globalStore.folders.find(f => f.id === folderId);
+      if (!folder) return;
+
+      document.getElementById('active-folder-tag').textContent = `${folder.category.toUpperCase()} / ${folder.name}`;
+      loadState(folder.diagramData);
+      showScreen('flowchart-screen');
+    }
+
+    function renderFolders() {
+      const grid = document.getElementById('folders-grid');
+      grid.innerHTML = '';
+
+      if (!globalStore.folders || globalStore.folders.length === 0) {
+        grid.innerHTML = `<p style="color: var(--text-sub); grid-column: 1/-1; text-align: center; padding: 40px;">Nenhuma pasta encontrada. Crie a sua primeira pasta acima!</p>`;
+        return;
+      }
+
+      globalStore.folders.forEach(folder => {
+        const card = document.createElement('div');
+        card.className = 'folder-card';
+        card.onclick = () => openFolder(folder.id);
+        card.innerHTML = `
+          <div class="folder-top">
+            <div class="folder-icon">📁</div>
+            <button class="folder-delete" onclick="deleteFolder(event, '${folder.id}')">✕</button>
+          </div>
+          <div class="folder-info">
+            <div class="folder-name">${folder.name}</div>
+            <span class="folder-category">${folder.category}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    /* INTEGRACÃO COM BANCO DE DADOS */
+    async function loadFromDatabase() {
+      dbStatus.textContent = "Carregando...";
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${DB_CONFIG.binId}/latest`, {
+          headers: { "X-Master-Key": DB_CONFIG.apiKey }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          globalStore = data.record || { folders: [] };
+          if (!globalStore.folders) globalStore.folders = [];
+          renderFolders();
+          dbStatus.textContent = "Pronto!";
+        }
+      } catch (e) {
+        dbStatus.textContent = "Erro de Conexão";
+      }
+    }
+
+    async function saveToDatabase() {
+      if (currentFolderId) {
+        const folder = globalStore.folders.find(f => f.id === currentFolderId);
+        if (folder) {
+          folder.diagramData = getState();
+        }
+      }
+
+      dbStatus.textContent = "Salvando...";
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${DB_CONFIG.binId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": DB_CONFIG.apiKey
+          },
+          body: JSON.stringify(globalStore)
+        });
+        
+        if (res.ok) {
+          dbStatus.textContent = "Salvo com sucesso!";
+        } else {
+          dbStatus.textContent = "Erro ao Salvar";
+        }
+      } catch (e) {
+        dbStatus.textContent = "Erro de Conexão";
+      }
+    }
+
+    /* MOTOR DO CANVAS & FLUXOGRAMA */
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
       zoomIndicator.textContent = `${Math.round(zoomLevel * 100)}%`;
@@ -136,27 +352,6 @@
     });
     window.addEventListener('mousemove', (e) => { if (isPanning) { panX = e.clientX - startPanX; panY = e.clientY - startPanY; applyTransform(); } });
     window.addEventListener('mouseup', () => { isPanning = false; viewport.classList.remove('is-panning'); });
-
-    function openFlowchart() {
-      document.getElementById('home-screen').style.opacity = '0';
-      setTimeout(() => {
-        document.getElementById('home-screen').classList.add('hidden');
-        const screen = document.getElementById('flowchart-screen');
-        screen.style.display = 'flex';
-        setTimeout(() => { screen.style.opacity = '1'; loadFromDatabase(); }, 50);
-      }, 300);
-    }
-
-    function closeFlowchart() {
-      const screen = document.getElementById('flowchart-screen');
-      screen.style.opacity = '0';
-      setTimeout(() => {
-        screen.style.display = 'none';
-        const home = document.getElementById('home-screen');
-        home.classList.remove('hidden');
-        setTimeout(() => home.style.opacity = '1', 50);
-      }, 300);
-    }
 
     function selectNode(node) {
       if (selectedNode) selectedNode.classList.remove('selected');
@@ -268,47 +463,6 @@
       });
     }
 
-    async function loadFromDatabase() {
-      dbStatus.textContent = "Carregando...";
-      try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${DB_CONFIG.binId}/latest`, {
-          headers: { "X-Master-Key": DB_CONFIG.apiKey }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          loadState(data.record);
-          dbStatus.textContent = "Pronto!";
-        } else {
-          dbStatus.textContent = "Erro ao Carregar";
-        }
-      } catch (e) {
-        dbStatus.textContent = "Erro de Conexão";
-      }
-    }
-
-    async function saveToDatabase() {
-      dbStatus.textContent = "Salvando...";
-      const state = getState();
-      try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${DB_CONFIG.binId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Master-Key": DB_CONFIG.apiKey
-          },
-          body: JSON.stringify(state)
-        });
-        
-        if (res.ok) {
-          dbStatus.textContent = "Salvo com sucesso!";
-        } else {
-          dbStatus.textContent = "Erro ao Salvar";
-        }
-      } catch (e) {
-        dbStatus.textContent = "Erro de Conexão";
-      }
-    }
-
     function getState() {
       const nodes = Array.from(document.querySelectorAll('.node-box')).map(n => ({
         id: n.id, left: n.style.left, top: n.style.top, text: n.querySelector('.node-text').innerHTML
@@ -318,11 +472,14 @@
     }
 
     function loadState(s) {
-      if (!s) return;
       document.querySelectorAll('.node-box').forEach(n => n.remove());
       arrows.forEach(a => a.element.remove());
       arrows = [];
+      if (!s) return;
       nodeCount = s.nodeCount || 0; arrowCount = s.arrowCount || 0;
+      zoomLevel = s.zoomLevel || 1; panX = s.panX || 0; panY = s.panY || 0;
+      applyTransform();
+
       if (s.nodes) s.nodes.forEach(n => {
         const node = addNode(); node.id = n.id; node.style.left = n.left; node.style.top = n.top;
         node.querySelector('.node-text').innerHTML = n.text || '';
