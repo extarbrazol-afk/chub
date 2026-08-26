@@ -103,6 +103,13 @@
       user-select: none;
     }
 
+    .github-status {
+      font-size: 0.85rem;
+      color: #00ffcc;
+      margin-left: 10px;
+      user-select: none;
+    }
+
     .btn {
       background: var(--node-bg);
       border: 1px solid var(--card-border);
@@ -118,6 +125,16 @@
     .btn:hover, .btn.active {
       border-color: var(--accent-blue);
       background: #252938;
+    }
+
+    .btn-save {
+      border-color: #2e7d32;
+      background: #1b5e20;
+    }
+
+    .btn-save:hover {
+      background: #2e7d32;
+      border-color: #4caf50;
     }
 
     .btn-back {
@@ -365,7 +382,9 @@
       <div class="toolbar">
         <button class="btn" onclick="addNode()">+ Adicionar Retângulo</button>
         <button class="btn" id="connect-btn" onclick="toggleConnectMode()">➔ Conectar Blocos</button>
+        <button class="btn btn-save" id="save-btn" onclick="saveToGitHub()">💾 Salvar no GitHub</button>
         <span class="zoom-indicator" id="zoom-indicator">100%</span>
+        <span class="github-status" id="github-status"></span>
       </div>
       <button class="btn btn-back" onclick="closeFlowchart()">← Voltar</button>
     </header>
@@ -396,6 +415,19 @@
   </div>
 
   <script>
+    // =========================================================
+    // ⚙️ PREENCHA COM AS SUAS INFORMAÇÕES DO GITHUB AQUI ABAIXO:
+    // =========================================================
+    const GITHUB_CONFIG = {
+      user: "SEU_USUARIO_DO_GITHUB",    // Exemplo: "joaosilva"
+      repo: "NOME_DO_SEU_REPOSITORIO",  // Exemplo: "chub-flowchart"
+      filePath: "dados.json",           // Nome do arquivo onde será salvo
+      token: "SEU_TOKEN_GHP_AQUI"       // Seu token ghp_...
+    };
+    // =========================================================
+
+    let fileSHA = ""; // Guarda o Hash da versão do arquivo no GitHub
+
     let nodeCount = 0;
     let arrowCount = 0;
     let arrows = [];
@@ -416,6 +448,7 @@
     const container = document.getElementById('canvas-container');
     const zoomIndicator = document.getElementById('zoom-indicator');
     const guidesContainer = document.getElementById('guides-container');
+    const githubStatus = document.getElementById('github-status');
 
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
@@ -443,7 +476,7 @@
       if (e.target === viewport || e.target.id === 'canvas-bg-grid' || e.target.id === 'canvas-container') {
         isPanning = true;
         startPanX = e.clientX - panX;
-        startPanY = e.clientY - panY;
+        startPanY = e.clientY - startPanY;
         viewport.classList.add('is-panning');
       }
     });
@@ -470,7 +503,10 @@
       setTimeout(() => {
         home.classList.add('hidden');
         flowchart.style.display = 'flex';
-        setTimeout(() => flowchart.style.opacity = '1', 50);
+        setTimeout(() => {
+          flowchart.style.opacity = '1';
+          loadFromGitHub(); // Carrega os dados ao abrir a tela
+        }, 50);
       }, 300);
     }
 
@@ -534,7 +570,7 @@
     function removeNode(nodeId) {
       const el = document.getElementById(nodeId);
       if (selectedNode === el) selectedNode = null;
-      el.remove();
+      if (el) el.remove();
       arrows = arrows.filter(a => {
         if (a.fromNodeId === nodeId || a.toNodeId === nodeId) { a.element.remove(); return false; }
         return true;
@@ -790,14 +826,16 @@
       });
     }
 
-    function createArrowBetweenAnchors(fromNodeId, fromDir, toNodeId, toDir) {
-      arrowCount++;
+    function createArrowBetweenAnchors(fromNodeId, fromDir, toNodeId, toDir, customId = null) {
+      if (!customId) arrowCount++;
+      const arrowId = customId || `arrow-${arrowCount}`;
+
       const svg = document.getElementById('svg-layer'), g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("class", "arrow-group"); g.setAttribute("id", `arrow-${arrowCount}`);
+      g.setAttribute("class", "arrow-group"); g.setAttribute("id", arrowId);
       const hitbox = document.createElementNS("http://www.w3.org/2000/svg", "path"), path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       hitbox.setAttribute("class", "arrow-hitbox"); path.setAttribute("class", "arrow-path"); path.setAttribute("marker-end", "url(#arrowhead)");
       
-      const arrowObj = { id: `arrow-${arrowCount}`, element: g, path: path, hitbox: hitbox, fromNodeId: fromNodeId, fromDir: fromDir, toNodeId: toNodeId, toDir: toDir };
+      const arrowObj = { id: arrowId, element: g, path: path, hitbox: hitbox, fromNodeId: fromNodeId, fromDir: fromDir, toNodeId: toNodeId, toDir: toDir };
       hitbox.onclick = (e) => { e.stopPropagation(); removeArrow(arrowObj.id); };
       g.appendChild(hitbox); g.appendChild(path); svg.appendChild(g); arrows.push(arrowObj); updateArrows();
     }
@@ -868,6 +906,170 @@
         copiedNodeData.left += 30; copiedNodeData.top += 30; selectNode(newNode); updateArrows();
       }
     });
+
+    // =========================================================
+    // 🌐 SISTEMA DE INTEGRAÇÃO COM A API DO GITHUB (PERSISTÊNCIA)
+    // =========================================================
+
+    function getCanvasState() {
+      const nodesData = [];
+      document.querySelectorAll('.node-box').forEach(node => {
+        const textEl = node.querySelector('.node-text');
+        nodesData.push({
+          id: node.id,
+          left: node.style.left,
+          top: node.style.top,
+          width: node.style.width,
+          height: node.style.height,
+          transform: node.style.transform,
+          text: textEl ? textEl.innerHTML : ''
+        });
+      });
+
+      const arrowsData = arrows.map(a => ({
+        id: a.id,
+        fromNodeId: a.fromNodeId,
+        fromDir: a.fromDir,
+        toNodeId: a.toNodeId,
+        toDir: a.toDir
+      }));
+
+      return {
+        nodeCount,
+        arrowCount,
+        zoomLevel,
+        panX,
+        panY,
+        nodes: nodesData,
+        arrows: arrowsData
+      };
+    }
+
+    function loadCanvasState(state) {
+      // Limpa a tela antes de restaurar
+      document.querySelectorAll('.node-box').forEach(n => n.remove());
+      arrows.forEach(a => a.element.remove());
+      arrows = [];
+
+      if (!state) return;
+
+      nodeCount = state.nodeCount || 0;
+      arrowCount = state.arrowCount || 0;
+      if (state.zoomLevel) zoomLevel = state.zoomLevel;
+      if (state.panX !== undefined) panX = state.panX;
+      if (state.panY !== undefined) panY = state.panY;
+      applyTransform();
+
+      // Recria os nós/blocos
+      if (state.nodes && Array.isArray(state.nodes)) {
+        state.nodes.forEach(nData => {
+          const node = document.createElement('div');
+          node.className = 'node-box';
+          node.id = nData.id;
+          node.style.left = nData.left;
+          node.style.top = nData.top;
+          if (nData.width) node.style.width = nData.width;
+          if (nData.height) node.style.height = nData.height;
+          if (nData.transform) node.style.transform = nData.transform;
+
+          node.innerHTML = `
+            <div class="rotate-handle" title="Arraste para rotacionar">↻</div>
+            <div class="resize-handle" title="Arraste para redimensionar"></div>
+            <div class="remove-btn" onclick="removeNode('${nData.id}')">✕</div>
+            <div class="anchor-point" data-dir="top"></div><div class="anchor-point" data-dir="top-right"></div>
+            <div class="anchor-point" data-dir="right"></div><div class="anchor-point" data-dir="bottom-right"></div>
+            <div class="anchor-point" data-dir="bottom"></div><div class="anchor-point" data-dir="bottom-left"></div>
+            <div class="anchor-point" data-dir="left"></div><div class="anchor-point" data-dir="top-left"></div>
+            <div class="node-text" contenteditable="true" data-placeholder="Digite o processo...">${nData.text || ''}</div>
+          `;
+
+          container.appendChild(node);
+          makeDraggable(node); makeRotatable(node); makeResizable(node); bindAnchors(node);
+        });
+      }
+
+      // Recria as setas de conexão
+      if (state.arrows && Array.isArray(state.arrows)) {
+        state.arrows.forEach(aData => {
+          createArrowBetweenAnchors(aData.fromNodeId, aData.fromDir, aData.toNodeId, aData.toDir, aData.id);
+        });
+      }
+
+      updateArrows();
+    }
+
+    async function loadFromGitHub() {
+      if (GITHUB_CONFIG.user === "SEU_USUARIO_DO_GITHUB") return;
+      
+      githubStatus.textContent = "Carregando...";
+      const url = `https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
+
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "Authorization": `token ${GITHUB_CONFIG.token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          fileSHA = data.sha;
+          const jsonText = decodeURIComponent(escape(atob(data.content)));
+          const state = JSON.parse(jsonText);
+          loadCanvasState(state);
+          githubStatus.textContent = "Carregado!";
+          setTimeout(() => { githubStatus.textContent = ""; }, 3000);
+        } else {
+          githubStatus.textContent = "Sem arquivo salvo";
+        }
+      } catch (e) {
+        console.error(e);
+        githubStatus.textContent = "Erro ao carregar";
+      }
+    }
+
+    async function saveToGitHub() {
+      if (GITHUB_CONFIG.user === "SEU_USUARIO_DO_GITHUB" || GITHUB_CONFIG.token === "SEU_TOKEN_GHP_AQUI") {
+        alert("Aviso: Preencha as suas informações de USER, REPO e TOKEN no topo da tag <script> do HTML!");
+        return;
+      }
+
+      githubStatus.textContent = "Salvando...";
+      const url = `https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
+      
+      const state = getCanvasState();
+      const jsonStr = JSON.stringify(state, null, 2);
+      const base64Content = btoa(unescape(encodeURIComponent(jsonStr)));
+
+      try {
+        const body = {
+          message: "Atualização de fluxograma via CHUB Studio",
+          content: base64Content
+        };
+        if (fileSHA) body.sha = fileSHA;
+
+        const res = await fetch(url, {
+          method: "PUT",
+          headers: {
+            "Authorization": `token ${GITHUB_CONFIG.token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+          const resData = await res.json();
+          fileSHA = resData.content.sha;
+          githubStatus.textContent = "Salvo com sucesso!";
+          setTimeout(() => { githubStatus.textContent = ""; }, 3000);
+        } else {
+          githubStatus.textContent = "Erro ao salvar";
+          alert("Erro ao salvar no GitHub! Verifique o Token, Usuário e Nome do Repositório.");
+        }
+      } catch (e) {
+        console.error(e);
+        githubStatus.textContent = "Erro de conexão";
+      }
+    }
   </script>
 </body>
 </html>
