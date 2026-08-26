@@ -198,7 +198,7 @@
   </div>
 
   <script>
-    const SECURITY_PIN = "1234";
+    const SECURITY_PIN = "5t7gb7nb@";
 
     const DB_CONFIG = {
       binId: "6a8f27b1da38895dfe143e4e",
@@ -226,7 +226,7 @@
       }
     }
 
-    /* SISTEMA DE AUTENTICAÇÃO COM SENHA */
+
     function requestAuth(actionType, payload = null) {
       pendingAction = { type: actionType, payload: payload };
       const authTitle = document.getElementById('auth-title');
@@ -275,7 +275,7 @@
       if (e.key === 'Enter') confirmAuth();
     });
 
-    /* SISTEMA DE PASTAS */
+
     function openFolderModal() {
       document.getElementById('folder-modal').classList.add('active');
       document.getElementById('folder-name-input').focus();
@@ -354,7 +354,6 @@
       });
     }
 
-    /* INTEGRACÃO COM BANCO DE DADOS */
     async function loadFromDatabase() {
       dbStatus.textContent = "Carregando...";
       try {
@@ -405,7 +404,6 @@
       }
     }
 
-    /* MOTOR DO CANVAS & FLUXOGRAMA */
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
       zoomIndicator.textContent = `${Math.round(zoomLevel * 100)}%`;
