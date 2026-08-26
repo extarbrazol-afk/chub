@@ -27,8 +27,8 @@
     #flowchart-screen { display: none; flex: 1; flex-direction: column; opacity: 0; transition: opacity 0.4s ease; height: 100vh; }
     header { padding: 12px 24px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; background-color: rgba(21, 23, 30, 0.95); z-index: 100; }
     .toolbar { display: flex; gap: 10px; align-items: center; }
-    .zoom-indicator, .github-status { font-size: 0.85rem; color: var(--text-sub); margin-left: 10px; }
-    .github-status { color: #00ffcc; font-weight: bold; }
+    .zoom-indicator, .db-status { font-size: 0.85rem; color: var(--text-sub); margin-left: 10px; }
+    .db-status { color: #00ffcc; font-weight: bold; }
     .btn { background: var(--node-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
     .btn:hover, .btn.active { border-color: var(--accent-blue); background: #252938; }
     .btn-save { border-color: #2e7d32; background: #1b5e20; }
@@ -73,9 +73,9 @@
       <div class="toolbar">
         <button class="btn" onclick="addNode()">+ Adicionar Retângulo</button>
         <button class="btn" id="connect-btn" onclick="toggleConnectMode()">➔ Conectar Blocos</button>
-        <button class="btn btn-save" onclick="saveToGitHub()">💾 Salvar no GitHub</button>
+        <button class="btn btn-save" onclick="saveToDatabase()">💾 Salvar na Nuvem</button>
         <span class="zoom-indicator" id="zoom-indicator">100%</span>
-        <span class="github-status" id="github-status"></span>
+        <span class="db-status" id="db-status"></span>
       </div>
       <button class="btn btn-back" onclick="closeFlowchart()">← Voltar</button>
     </header>
@@ -98,17 +98,11 @@
   </div>
 
   <script>
-    const GITHUB_CONFIG = { user: "extarbrazol-afk", repo: "chubbb", filePath: "dados.json" };
-    
-    // Token em Base64 configurado:
-    const EMBEDDED_TOKEN_B64 = "Z2hwX0RkRE5PY3RqN0s2SE9IUXlvS25tbUpLeG5tTTVUVzQ4ZDh0Qw==";
+    const DB_CONFIG = {
+      binId: "6a8f27b1da38895dfe143e4e",
+      apiKey: "$2a$10$lrjAB/pBHe0LPTuQDuWNyO/paWbsAKeQaJ4hiJFauUbLL5/y4svHy"
+    };
 
-    function getActiveToken() {
-      try { return atob(EMBEDDED_TOKEN_B64).trim(); } catch(e) { return ""; }
-    }
-
-    let githubToken = getActiveToken();
-    let fileSHA = "";
     let nodeCount = 0, arrowCount = 0, arrows = [];
     let isConnectMode = false, selectedStartAnchor = null, selectedNode = null;
     let zoomLevel = 1, panX = 0, panY = 0, isPanning = false, startPanX = 0, startPanY = 0;
@@ -116,7 +110,7 @@
     const viewport = document.getElementById('canvas-viewport');
     const container = document.getElementById('canvas-container');
     const zoomIndicator = document.getElementById('zoom-indicator');
-    const githubStatus = document.getElementById('github-status');
+    const dbStatus = document.getElementById('db-status');
 
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
@@ -149,7 +143,7 @@
         document.getElementById('home-screen').classList.add('hidden');
         const screen = document.getElementById('flowchart-screen');
         screen.style.display = 'flex';
-        setTimeout(() => { screen.style.opacity = '1'; loadFromGitHub(); }, 50);
+        setTimeout(() => { screen.style.opacity = '1'; loadFromDatabase(); }, 50);
       }, 300);
     }
 
@@ -274,47 +268,45 @@
       });
     }
 
-    async function loadFromGitHub() {
-      if (!githubToken) {
-        githubStatus.textContent = "Token não configurado";
-        return;
-      }
-      githubStatus.textContent = "Conectando...";
-      const url = `https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
+    async function loadFromDatabase() {
+      dbStatus.textContent = "Carregando...";
       try {
-        const res = await fetch(url, { headers: { "Authorization": `token ${githubToken}` } });
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${DB_CONFIG.binId}/latest`, {
+          headers: { "X-Master-Key": DB_CONFIG.apiKey }
+        });
         if (res.ok) {
           const data = await res.json();
-          fileSHA = data.sha;
-          const state = JSON.parse(decodeURIComponent(escape(atob(data.content))));
-          loadState(state);
-          githubStatus.textContent = "Pronto!";
-        } else if (res.status === 404) {
-          githubStatus.textContent = "Novo Arquivo";
-        } else if (res.status === 401) {
-          githubStatus.textContent = "Token Inválido/Expirado";
+          loadState(data.record);
+          dbStatus.textContent = "Pronto!";
+        } else {
+          dbStatus.textContent = "Erro ao Carregar";
         }
-      } catch (e) { githubStatus.textContent = "Erro de Conexão"; }
+      } catch (e) {
+        dbStatus.textContent = "Erro de Conexão";
+      }
     }
 
-    async function saveToGitHub() {
-      if (!githubToken) return alert("Token não encontrado!");
-      githubStatus.textContent = "Salvando...";
-      const url = `https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
+    async function saveToDatabase() {
+      dbStatus.textContent = "Salvando...";
       const state = getState();
-      const content = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
       try {
-        const body = { message: "Atualização de equipe via CHUB", content };
-        if (fileSHA) body.sha = fileSHA;
-        const res = await fetch(url, { method: "PUT", headers: { "Authorization": `token ${githubToken}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${DB_CONFIG.binId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Master-Key": DB_CONFIG.apiKey
+          },
+          body: JSON.stringify(state)
+        });
+        
         if (res.ok) {
-          const resData = await res.json();
-          fileSHA = resData.content.sha;
-          githubStatus.textContent = "Salvo com sucesso!";
+          dbStatus.textContent = "Salvo com sucesso!";
         } else {
-          githubStatus.textContent = "Erro ao Salvar";
+          dbStatus.textContent = "Erro ao Salvar";
         }
-      } catch (e) { githubStatus.textContent = "Erro de conexão"; }
+      } catch (e) {
+        dbStatus.textContent = "Erro de Conexão";
+      }
     }
 
     function getState() {
