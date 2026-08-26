@@ -92,12 +92,51 @@
     .guide-line.h-guide { height: 1px; width: 20000px; left: -10000px; }
 
     #svg-layer { position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; pointer-events: none; z-index: 5; }
-    .node-box { position: absolute; width: 180px; height: 100px; border: 1.5px solid var(--node-border); border-radius: 12px; background-color: var(--node-bg); display: flex; align-items: center; justify-content: center; padding: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); z-index: 10; cursor: move; transition: border-color 0.2s, box-shadow 0.2s; }
+
+    /* NOVO: Propriedades resize e overflow adicionadas para redimensionar o retângulo */
+    .node-box { 
+      position: absolute; 
+      width: 180px; 
+      height: 100px; 
+      min-width: 100px;
+      min-height: 60px;
+      resize: both; 
+      overflow: hidden; 
+      border: 1.5px solid var(--node-border); 
+      border-radius: 12px; 
+      background-color: var(--node-bg); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      padding: 12px; 
+      box-shadow: 0 4px 14px rgba(0,0,0,0.5); 
+      z-index: 10; 
+      cursor: move; 
+      transition: border-color 0.2s, box-shadow 0.2s; 
+    }
     .node-box.selected { border-color: var(--accent-blue) !important; box-shadow: 0 0 15px rgba(52, 131, 250, 0.7) !important; z-index: 20; }
     .node-text { width: 100%; height: 100%; outline: none; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 0.95rem; color: var(--text-main); word-break: break-word; cursor: text; }
     .node-text:empty:before { content: attr(data-placeholder); color: var(--text-sub); opacity: 0.6; }
-    .node-box .remove-btn { position: absolute; top: -8px; right: -8px; background: var(--arrow-delete); color: white; border-radius: 50%; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; z-index: 25; }
+    
+    /* BOTÃO REMOVER DO NÓ */
+    .node-box .remove-btn { 
+      position: absolute; 
+      top: 4px; 
+      right: 4px; 
+      background: var(--arrow-delete); 
+      color: white; 
+      border-radius: 50%; 
+      width: 22px; 
+      height: 22px; 
+      display: none; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 11px; 
+      cursor: pointer; 
+      z-index: 30; 
+    }
     body:not(.connect-mode) .node-box:hover .remove-btn { display: flex; }
+    
     .anchor-point { position: absolute; width: 10px; height: 10px; background-color: var(--node-bg); border: 2px solid var(--anchor-color); border-radius: 50%; z-index: 40; cursor: crosshair; display: none; }
     body.connect-mode .anchor-point { display: block; }
     .anchor-point:hover, .anchor-point.selected-start { background-color: var(--anchor-color); transform: scale(1.4); }
@@ -209,7 +248,7 @@
   </div>
 
   <script>
-    const SECURITY_PIN = "5t7gb7nb@";
+    const SECURITY_PIN = "1234";
 
     const DB_CONFIG = {
       binId: "6a8f27b1da38895dfe143e4e",
@@ -459,36 +498,65 @@
       if (selectedNode) { selectedNode.classList.remove('selected'); selectedNode = null; }
     }
 
-    function addNode() {
+    function addNode(customId = null) {
       nodeCount++;
+      const id = customId || `node-${nodeCount}`;
       const node = document.createElement('div');
       node.className = 'node-box';
-      node.id = `node-${nodeCount}`;
+      node.id = id;
       const rect = viewport.getBoundingClientRect();
       node.style.left = `${(-panX + rect.width / 2) / zoomLevel - 90 + (nodeCount * 10)}px`;
       node.style.top = `${(-panY + rect.height / 2) / zoomLevel - 50 + (nodeCount * 10)}px`;
+      
       node.innerHTML = `
-        <div class="remove-btn" onclick="removeNode('node-${nodeCount}')">✕</div>
+        <div class="remove-btn">✕</div>
         <div class="anchor-point" data-dir="top"></div><div class="anchor-point" data-dir="right"></div>
         <div class="anchor-point" data-dir="bottom"></div><div class="anchor-point" data-dir="left"></div>
         <div class="node-text" contenteditable="true" data-placeholder="Digite aqui..."></div>
       `;
+      
+      // Evento explícito de remoção no botão X
+      node.querySelector('.remove-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeNode(id);
+      });
+
+      // Atualiza o desenho das setas em tempo real ao redimensionar
+      new ResizeObserver(() => {
+        updateArrows();
+      }).observe(node);
+
       container.appendChild(node);
-      makeDraggable(node); bindAnchors(node); selectNode(node);
+      makeDraggable(node); 
+      bindAnchors(node); 
+      selectNode(node);
       return node;
     }
 
     function removeNode(nodeId) {
       const el = document.getElementById(nodeId);
       if (el) el.remove();
-      arrows = arrows.filter(a => { if (a.fromNodeId === nodeId || a.toNodeId === nodeId) { a.element.remove(); return false; } return true; });
+      arrows = arrows.filter(a => { 
+        if (a.fromNodeId === nodeId || a.toNodeId === nodeId) { 
+          a.element.remove(); 
+          return false; 
+        } 
+        return true; 
+      });
     }
 
     function makeDraggable(elmnt) {
       let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
       elmnt.onmousedown = (e) => {
         selectNode(elmnt);
-        if (e.target.classList.contains('node-text') || e.target.classList.contains('remove-btn') || e.target.classList.contains('anchor-point')) return;
+        
+        // Evita arrastar a caixa ao clicar no texto, botões, ancoras ou na alça de redimensionamento
+        const rect = elmnt.getBoundingClientRect();
+        const isResizeHandle = (e.clientX > rect.right - 16 && e.clientY > rect.bottom - 16);
+        if (e.target.classList.contains('node-text') || 
+            e.target.classList.contains('remove-btn') || 
+            e.target.classList.contains('anchor-point') || 
+            isResizeHandle) return;
         
         p3 = e.clientX; 
         p4 = e.clientY;
@@ -496,14 +564,11 @@
         const vGuide = document.getElementById('guide-v');
         const hGuide = document.getElementById('guide-h');
         
-        // Pega os outros blocos na tela para criar o magnetismo (exclui o atual)
         const otherNodes = Array.from(document.querySelectorAll('.node-box')).filter(n => n !== elmnt);
 
         document.onmouseup = () => { 
           document.onmouseup = null; 
           document.onmousemove = null; 
-          
-          // Oculta as guias ao soltar o mouse
           vGuide.style.display = 'none';
           hGuide.style.display = 'none';
         };
@@ -519,18 +584,17 @@
           let w = elmnt.offsetWidth;
           let h = elmnt.offsetHeight;
           
-          const snapThreshold = 10; // Força do ímã (em pixels)
+          const snapThreshold = 10;
           let snapX = null;
           let snapY = null;
 
-          // Percorre os outros blocos verificando o alinhamento
           for (let other of otherNodes) {
             let oX = parseFloat(other.style.left);
             let oY = parseFloat(other.style.top);
             let oW = other.offsetWidth;
             let oH = other.offsetHeight;
 
-            // MAGNETISMO EIXO X (Vertical Guide)
+            // MAGNETISMO EIXO X
             if (Math.abs(newX - oX) < snapThreshold) { 
               newX = oX; snapX = oX; 
             } else if (Math.abs((newX + w/2) - (oX + oW/2)) < snapThreshold) { 
@@ -539,7 +603,7 @@
               newX = oX + oW - w; snapX = oX + oW; 
             }
 
-            // MAGNETISMO EIXO Y (Horizontal Guide)
+            // MAGNETISMO EIXO Y
             if (Math.abs(newY - oY) < snapThreshold) { 
               newY = oY; snapY = oY; 
             } else if (Math.abs((newY + h/2) - (oY + oH/2)) < snapThreshold) { 
@@ -549,7 +613,6 @@
             }
           }
 
-          // Posiciona e exibe as linhas se houver alinhamento
           if (snapX !== null) {
             vGuide.style.left = snapX + 'px';
             vGuide.style.display = 'block';
@@ -630,7 +693,12 @@
 
     function getState() {
       const nodes = Array.from(document.querySelectorAll('.node-box')).map(n => ({
-        id: n.id, left: n.style.left, top: n.style.top, text: n.querySelector('.node-text').innerHTML
+        id: n.id, 
+        left: n.style.left, 
+        top: n.style.top, 
+        width: n.style.width,
+        height: n.style.height,
+        text: n.querySelector('.node-text').innerHTML
       }));
       const arrowsData = arrows.map(a => ({ id: a.id, fromNodeId: a.fromNodeId, fromDir: a.fromDir, toNodeId: a.toNodeId, toDir: a.toDir }));
       return { nodeCount, arrowCount, zoomLevel, panX, panY, nodes, arrows: arrowsData };
@@ -646,7 +714,11 @@
       applyTransform();
 
       if (s.nodes) s.nodes.forEach(n => {
-        const node = addNode(); node.id = n.id; node.style.left = n.left; node.style.top = n.top;
+        const node = addNode(n.id); 
+        node.style.left = n.left; 
+        node.style.top = n.top;
+        if (n.width) node.style.width = n.width;
+        if (n.height) node.style.height = n.height;
         node.querySelector('.node-text').innerHTML = n.text || '';
       });
       if (s.arrows) s.arrows.forEach(a => createArrow(a.fromNodeId, a.fromDir, a.toNodeId, a.toDir, a.id));
