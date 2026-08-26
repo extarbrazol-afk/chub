@@ -66,17 +66,20 @@
     .btn-save { border-color: #2e7d32; background: #1b5e20; }
     .btn-save:hover { background: #2e7d32; }
     .btn-back { background: transparent; border: 1px solid var(--card-border); color: var(--text-sub); }
+    .btn-danger { background: var(--arrow-delete); border-color: var(--arrow-delete); color: #fff; }
 
-    /* MODAL DE NOVA PASTA */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.2s ease; }
+    /* MODAIS */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.2s ease; }
     .modal-overlay.active { opacity: 1; visibility: visible; }
     .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 16px; padding: 28px; width: 100%; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.8); }
-    .modal h3 { margin-bottom: 20px; font-size: 1.3rem; }
+    .modal h3 { margin-bottom: 8px; font-size: 1.3rem; }
+    .modal p { color: var(--text-sub); font-size: 0.85rem; margin-bottom: 20px; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 0.8rem; color: var(--text-sub); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
     .form-group input { width: 100%; background: var(--node-bg); border: 1px solid var(--card-border); padding: 10px 12px; border-radius: 8px; color: var(--text-main); font-size: 0.95rem; outline: none; }
     .form-group input:focus { border-color: var(--accent-blue); }
     .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+    .error-msg { color: var(--arrow-delete); font-size: 0.8rem; margin-top: 6px; display: none; }
 
     /* CANVAS ELEMENTS */
     #canvas-viewport { flex: 1; position: relative; background-color: var(--bg-color); overflow: hidden; user-select: none; cursor: grab; }
@@ -134,7 +137,7 @@
       <div class="toolbar">
         <button class="btn" onclick="addNode()">+ Adicionar Retângulo</button>
         <button class="btn" id="connect-btn" onclick="toggleConnectMode()">➔ Conectar Blocos</button>
-        <button class="btn btn-save" onclick="saveToDatabase()">💾 Salvar na Nuvem</button>
+        <button class="btn btn-save" onclick="requestAuth('save')">💾 Salvar na Nuvem</button>
         <span class="zoom-indicator" id="zoom-indicator">100%</span>
         <span class="db-status" id="db-status"></span>
       </div>
@@ -162,6 +165,7 @@
   <div class="modal-overlay" id="folder-modal">
     <div class="modal">
       <h3>Criar Nova Pasta</h3>
+      <p>Defina o nome e a categoria para organizar</p>
       <div class="form-group">
         <label>Nome da Pasta</label>
         <input type="text" id="folder-name-input" placeholder="Ex: Arquitetura de API">
@@ -177,7 +181,26 @@
     </div>
   </div>
 
+  <!-- MODAL DE AUTENTICAÇÃO / SENHA -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal">
+      <h3 id="auth-title">Autenticação Requerida</h3>
+      <p id="auth-desc">Digite a senha para confirmar a ação</p>
+      <div class="form-group">
+        <label>Senha de Acesso</label>
+        <input type="password" id="auth-pin-input" placeholder="••••">
+        <div class="error-msg" id="auth-error">Senha incorreta. Tente novamente.</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-back" onclick="closeAuthModal()">Cancelar</button>
+        <button class="btn btn-primary" id="auth-confirm-btn" onclick="confirmAuth()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    const SECURITY_PIN = "109173"; // <<< ALTERE SUA SENHA AQUI
+
     const DB_CONFIG = {
       binId: "6a8f27b1da38895dfe143e4e",
       apiKey: "$2a$10$lrjAB/pBHe0LPTuQDuWNyO/paWbsAKeQaJ4hiJFauUbLL5/y4svHy"
@@ -185,6 +208,7 @@
 
     let globalStore = { folders: [] };
     let currentFolderId = null;
+    let pendingAction = null;
 
     let nodeCount = 0, arrowCount = 0, arrows = [];
     let isConnectMode = false, selectedStartAnchor = null, selectedNode = null;
@@ -202,6 +226,55 @@
         loadFromDatabase();
       }
     }
+
+    /* SISTEMA DE AUTENTICAÇÃO COM SENHA */
+    function requestAuth(actionType, payload = null) {
+      pendingAction = { type: actionType, payload: payload };
+      const authTitle = document.getElementById('auth-title');
+      const authDesc = document.getElementById('auth-desc');
+      const errorMsg = document.getElementById('auth-error');
+      
+      errorMsg.style.display = 'none';
+      document.getElementById('auth-pin-input').value = '';
+
+      if (actionType === 'delete') {
+        authTitle.textContent = "Excluir Pasta";
+        authDesc.textContent = "Digite a senha para confirmar a exclusão desta pasta.";
+      } else if (actionType === 'save') {
+        authTitle.textContent = "Salvar Alterações";
+        authDesc.textContent = "Digite a senha para atualizar os dados na nuvem.";
+      }
+
+      document.getElementById('auth-modal').classList.add('active');
+      document.getElementById('auth-pin-input').focus();
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').classList.remove('active');
+      pendingAction = null;
+    }
+
+    function confirmAuth() {
+      const pin = document.getElementById('auth-pin-input').value;
+      const errorMsg = document.getElementById('auth-error');
+
+      if (pin === SECURITY_PIN) {
+        closeAuthModal();
+        if (pendingAction) {
+          if (pendingAction.type === 'delete') {
+            executeDeleteFolder(pendingAction.payload);
+          } else if (pendingAction.type === 'save') {
+            saveToDatabase();
+          }
+        }
+      } else {
+        errorMsg.style.display = 'block';
+      }
+    }
+
+    document.getElementById('auth-pin-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') confirmAuth();
+    });
 
     /* SISTEMA DE PASTAS */
     function openFolderModal() {
@@ -229,17 +302,19 @@
 
       globalStore.folders.push(newFolder);
       closeFolderModal();
-      saveToDatabase();
+      saveToDatabaseDirect();
       renderFolders();
     }
 
     function deleteFolder(e, folderId) {
       e.stopPropagation();
-      if (confirm("Tem certeza que deseja excluir esta pasta e seu fluxograma?")) {
-        globalStore.folders = globalStore.folders.filter(f => f.id !== folderId);
-        saveToDatabase();
-        renderFolders();
-      }
+      requestAuth('delete', folderId);
+    }
+
+    function executeDeleteFolder(folderId) {
+      globalStore.folders = globalStore.folders.filter(f => f.id !== folderId);
+      saveToDatabaseDirect();
+      renderFolders();
     }
 
     function openFolder(folderId) {
@@ -298,14 +373,17 @@
       }
     }
 
-    async function saveToDatabase() {
+    function saveToDatabase() {
       if (currentFolderId) {
         const folder = globalStore.folders.find(f => f.id === currentFolderId);
         if (folder) {
           folder.diagramData = getState();
         }
       }
+      saveToDatabaseDirect();
+    }
 
+    async function saveToDatabaseDirect() {
       dbStatus.textContent = "Salvando...";
       try {
         const res = await fetch(`https://api.jsonbin.io/v3/b/${DB_CONFIG.binId}`, {
