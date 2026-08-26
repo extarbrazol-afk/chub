@@ -14,376 +14,66 @@
       --node-bg: #1c1f2b;
       --node-border: #3b3f52;
       --accent-blue: #3483fa;
-      --guide-color: #ff0055;
       --arrow-color: #6c7280;
       --arrow-delete: #ff4d4d;
       --anchor-color: #00ffcc;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    #home-screen {
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: opacity 0.4s ease;
-    }
-
-    .chub-card {
-      background-color: var(--card-bg);
-      border: 1.5px solid var(--card-border);
-      width: 280px;
-      height: 160px;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-      transition: all 0.3s ease;
-      user-select: none;
-    }
-
-    .chub-card:hover {
-      transform: translateY(-5px);
-      border-color: #4a4e5d;
-    }
-
-    .chub-card h1 {
-      font-size: 2.2rem;
-      font-weight: 700;
-      letter-spacing: 4px;
-      color: var(--text-main);
-    }
-
-    #flowchart-screen {
-      display: none;
-      flex: 1;
-      flex-direction: column;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-      height: 100vh;
-    }
-
-    header {
-      padding: 12px 24px;
-      border-bottom: 1px solid var(--card-border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background-color: rgba(21, 23, 30, 0.95);
-      z-index: 100;
-    }
-
-    .toolbar {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .zoom-indicator {
-      font-size: 0.85rem;
-      color: var(--text-sub);
-      margin-left: 10px;
-      user-select: none;
-    }
-
-    .github-status {
-      font-size: 0.85rem;
-      color: #00ffcc;
-      margin-left: 10px;
-      user-select: none;
-    }
-
-    .btn {
-      background: var(--node-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-main);
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      font-weight: 500;
-      transition: all 0.2s;
-    }
-
-    .btn:hover, .btn.active {
-      border-color: var(--accent-blue);
-      background: #252938;
-    }
-
-    .btn-save {
-      border-color: #2e7d32;
-      background: #1b5e20;
-    }
-
-    .btn-save:hover {
-      background: #2e7d32;
-      border-color: #4caf50;
-    }
-
-    .btn-back {
-      background: transparent;
-      border: 1px solid var(--card-border);
-      color: var(--text-sub);
-    }
-
-    /* Área do Canvas */
-    #canvas-viewport {
-      flex: 1;
-      position: relative;
-      background-color: var(--bg-color);
-      overflow: hidden;
-      user-select: none;
-      cursor: grab;
-    }
-
-    #canvas-viewport.is-panning {
-      cursor: grabbing !important;
-    }
-
-    #canvas-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      transform-origin: 0 0;
-    }
-
-    #canvas-bg-grid {
-      position: absolute;
-      top: -10000px;
-      left: -10000px;
-      width: 20000px;
-      height: 20000px;
-      background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-      background-size: 24px 24px;
-      pointer-events: none;
-    }
-
-    #svg-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 10000px;
-      height: 10000px;
-      pointer-events: none;
-      z-index: 5;
-    }
-
-    #distance-layer {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 10000px;
-      height: 10000px;
-      pointer-events: none;
-      z-index: 50;
-    }
-
-    #guides-container {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 45;
-    }
-
-    .guide-line {
-      position: absolute;
-      background-color: var(--guide-color);
-      pointer-events: none;
-    }
-    .guide-line.vertical { width: 1px; top: -10000px; bottom: -10000px; }
-    .guide-line.horizontal { height: 1px; left: -10000px; right: -10000px; }
-
-    .node-box {
-      position: absolute;
-      width: 180px;
-      height: 100px;
-      min-width: 100px;
-      min-height: 60px;
-      border: 1.5px solid var(--node-border);
-      border-radius: 12px;
-      background-color: var(--node-bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 12px;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.5);
-      z-index: 10;
-      cursor: move;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .node-box.selected {
-      border-color: var(--accent-blue) !important;
-      box-shadow: 0 0 15px rgba(52, 131, 250, 0.7) !important;
-    }
-
-    .node-text {
-      width: 100%;
-      height: 100%;
-      outline: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      font-size: 0.95rem;
-      color: var(--text-main);
-      word-break: break-word;
-      cursor: text;
-    }
-
-    .node-text:empty:before {
-      content: attr(data-placeholder);
-      color: var(--text-sub);
-      opacity: 0.6;
-    }
-
-    .rotate-handle {
-      position: absolute;
-      top: -26px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 20px;
-      height: 20px;
-      background-color: var(--node-bg);
-      border: 1px solid var(--accent-blue);
-      border-radius: 50%;
-      color: var(--accent-blue);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      cursor: grab;
-      z-index: 25;
-    }
-
-    body:not(.connect-mode) .node-box:hover .rotate-handle { display: flex; }
-
-    .resize-handle {
-      position: absolute;
-      bottom: 2px;
-      right: 2px;
-      width: 14px;
-      height: 14px;
-      cursor: se-resize;
-      z-index: 25;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .resize-handle::after {
-      content: "";
-      width: 6px;
-      height: 6px;
-      border-right: 2px solid var(--text-sub);
-      border-bottom: 2px solid var(--text-sub);
-    }
-
-    .node-box .remove-btn {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: var(--arrow-delete);
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      cursor: pointer;
-      z-index: 25;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    #home-screen { flex: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .chub-card { background-color: var(--card-bg); border: 1.5px solid var(--card-border); width: 280px; height: 160px; border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+    .chub-card h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: 4px; color: var(--text-main); }
+    #flowchart-screen { display: none; flex: 1; flex-direction: column; opacity: 0; transition: opacity 0.4s ease; height: 100vh; }
+    header { padding: 12px 24px; border-bottom: 1px solid var(--card-border); display: flex; align-items: center; justify-content: space-between; background-color: rgba(21, 23, 30, 0.95); z-index: 100; }
+    .toolbar { display: flex; gap: 10px; align-items: center; }
+    .zoom-indicator, .github-status { font-size: 0.85rem; color: var(--text-sub); margin-left: 10px; }
+    .github-status { color: #00ffcc; font-weight: bold; }
+    .btn { background: var(--node-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 500; }
+    .btn:hover, .btn.active { border-color: var(--accent-blue); background: #252938; }
+    .btn-save { border-color: #2e7d32; background: #1b5e20; }
+    .btn-save:hover { background: #2e7d32; }
+    .btn-back { background: transparent; border: 1px solid var(--card-border); color: var(--text-sub); }
+    #canvas-viewport { flex: 1; position: relative; background-color: var(--bg-color); overflow: hidden; user-select: none; cursor: grab; }
+    #canvas-viewport.is-panning { cursor: grabbing !important; }
+    #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: 0 0; }
+    #canvas-bg-grid { position: absolute; top: -10000px; left: -10000px; width: 20000px; height: 20000px; background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px); background-size: 24px 24px; pointer-events: none; }
+    #svg-layer { position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; pointer-events: none; z-index: 5; }
+    .node-box { position: absolute; width: 180px; height: 100px; border: 1.5px solid var(--node-border); border-radius: 12px; background-color: var(--node-bg); display: flex; align-items: center; justify-content: center; padding: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.5); z-index: 10; cursor: move; }
+    .node-box.selected { border-color: var(--accent-blue) !important; box-shadow: 0 0 15px rgba(52, 131, 250, 0.7) !important; }
+    .node-text { width: 100%; height: 100%; outline: none; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 0.95rem; color: var(--text-main); word-break: break-word; cursor: text; }
+    .node-text:empty:before { content: attr(data-placeholder); color: var(--text-sub); opacity: 0.6; }
+    .node-box .remove-btn { position: absolute; top: -8px; right: -8px; background: var(--arrow-delete); color: white; border-radius: 50%; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; z-index: 25; }
     body:not(.connect-mode) .node-box:hover .remove-btn { display: flex; }
-    body.connect-mode .remove-btn,
-    body.connect-mode .rotate-handle { display: none !important; }
-
-    .anchor-point {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background-color: var(--node-bg);
-      border: 2px solid var(--anchor-color);
-      border-radius: 50%;
-      z-index: 40;
-      cursor: crosshair;
-      display: none;
-      transition: transform 0.15s, background-color 0.15s;
-    }
-
+    .anchor-point { position: absolute; width: 10px; height: 10px; background-color: var(--node-bg); border: 2px solid var(--anchor-color); border-radius: 50%; z-index: 40; cursor: crosshair; display: none; }
     body.connect-mode .anchor-point { display: block; }
-
-    .anchor-point:hover, .anchor-point.selected-start {
-      background-color: var(--anchor-color);
-      transform: scale(1.4);
-      box-shadow: 0 0 8px var(--anchor-color);
-    }
-
-    .anchor-point[data-dir="top"]          { top: -5px; left: calc(50% - 5px); }
-    .anchor-point[data-dir="top-right"]    { top: -5px; right: -5px; }
-    .anchor-point[data-dir="right"]        { top: calc(50% - 5px); right: -5px; }
-    .anchor-point[data-dir="bottom-right"] { bottom: -5px; right: -5px; }
-    .anchor-point[data-dir="bottom"]       { bottom: -5px; left: calc(50% - 5px); }
-    .anchor-point[data-dir="bottom-left"]  { bottom: -5px; left: -5px; }
-    .anchor-point[data-dir="left"]         { top: calc(50% - 5px); left: -5px; }
-    .anchor-point[data-dir="top-left"]     { top: -5px; left: -5px; }
-
+    .anchor-point:hover, .anchor-point.selected-start { background-color: var(--anchor-color); transform: scale(1.4); }
+    .anchor-point[data-dir="top"] { top: -5px; left: calc(50% - 5px); }
+    .anchor-point[data-dir="right"] { top: calc(50% - 5px); right: -5px; }
+    .anchor-point[data-dir="bottom"] { bottom: -5px; left: calc(50% - 5px); }
+    .anchor-point[data-dir="left"] { top: calc(50% - 5px); left: -5px; }
     .arrow-group { cursor: pointer; }
-    .arrow-hitbox { stroke: transparent; stroke-width: 16px; fill: none; pointer-events: stroke; cursor: pointer; }
-    .arrow-path {
-      stroke: var(--arrow-color); stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round;
-      fill: none; pointer-events: none; transition: stroke 0.2s, stroke-width 0.2s, filter 0.2s;
-    }
-    .arrow-group:hover .arrow-path {
-      stroke: var(--arrow-delete); stroke-width: 3px; filter: drop-shadow(0 0 6px rgba(255, 77, 77, 0.6));
-      marker-end: url(#arrowhead-red);
-    }
-
+    .arrow-hitbox { stroke: transparent; stroke-width: 16px; fill: none; pointer-events: stroke; }
+    .arrow-path { stroke: var(--arrow-color); stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; fill: none; pointer-events: none; }
+    .arrow-group:hover .arrow-path { stroke: var(--arrow-delete); stroke-width: 3px; marker-end: url(#arrowhead-red); }
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-  <!-- Tela Inicial -->
   <div id="home-screen" onclick="openFlowchart()">
     <div class="chub-card">
       <h1>CHUB</h1>
     </div>
   </div>
 
-  <!-- Tela do Editor -->
   <div id="flowchart-screen">
     <header>
       <div class="logo">CHUB</div>
       <div class="toolbar">
         <button class="btn" onclick="addNode()">+ Adicionar Retângulo</button>
         <button class="btn" id="connect-btn" onclick="toggleConnectMode()">➔ Conectar Blocos</button>
-        <button class="btn btn-save" id="save-btn" onclick="saveToGitHub()">💾 Salvar no GitHub</button>
-        <button class="btn" onclick="resetToken()">🔑 Alterar Token</button>
+        <button class="btn btn-save" onclick="saveToGitHub()">💾 Salvar no GitHub</button>
         <span class="zoom-indicator" id="zoom-indicator">100%</span>
         <span class="github-status" id="github-status"></span>
       </div>
@@ -393,14 +83,6 @@
     <main id="canvas-viewport" onclick="deselectAll(event)">
       <div id="canvas-container">
         <div id="canvas-bg-grid"></div>
-        
-        <!-- Conteiner Dinâmico de Linhas Guia -->
-        <div id="guides-container"></div>
-
-        <!-- Camada de Indicadores de Distância -->
-        <svg id="distance-layer"></svg>
-
-        <!-- Camada de Setas SVG -->
         <svg id="svg-layer">
           <defs>
             <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
@@ -416,56 +98,25 @@
   </div>
 
   <script>
-    // =========================================================
-    // ⚙️ CONFIGURAÇÕES DO GITHUB (Sem expor o Token no código)
-    // =========================================================
-    const GITHUB_CONFIG = {
-      user: "extarbrazol-afk",
-      repo: "chub",
-      filePath: "dados.json"
-    };
+    const GITHUB_CONFIG = { user: "extarbrazol-afk", repo: "chub", filePath: "dados.json" };
+    
+    // Token em Base64 configurado:
+    const EMBEDDED_TOKEN_B64 = "Z2hwX0RkRE5PY3RqN0s2SE9IUXlvS25tbUpLeG5tTTVUVzQ4ZDh0Qw==";
 
-    let githubToken = localStorage.getItem("CHUB_GITHUB_TOKEN") || "";
+    function getActiveToken() {
+      try { return atob(EMBEDDED_TOKEN_B64).trim(); } catch(e) { return ""; }
+    }
+
+    let githubToken = getActiveToken();
     let fileSHA = "";
-
-    let nodeCount = 0;
-    let arrowCount = 0;
-    let arrows = [];
-    let isConnectMode = false;
-    let selectedStartAnchor = null;
-    let selectedNode = null;
-    let selectedArrow = null;
-    let copiedNodeData = null;
-
-    let zoomLevel = 1;
-    let panX = 0;
-    let panY = 0;
-    let isPanning = false;
-    let startPanX = 0;
-    let startPanY = 0;
+    let nodeCount = 0, arrowCount = 0, arrows = [];
+    let isConnectMode = false, selectedStartAnchor = null, selectedNode = null;
+    let zoomLevel = 1, panX = 0, panY = 0, isPanning = false, startPanX = 0, startPanY = 0;
 
     const viewport = document.getElementById('canvas-viewport');
     const container = document.getElementById('canvas-container');
     const zoomIndicator = document.getElementById('zoom-indicator');
-    const guidesContainer = document.getElementById('guides-container');
     const githubStatus = document.getElementById('github-status');
-
-    function checkToken() {
-      if (!githubToken) {
-        githubToken = prompt("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");
-        if (githubToken) {
-          githubToken = githubToken.trim();
-          localStorage.setItem("CHUB_GITHUB_TOKEN", githubToken);
-        }
-      }
-      return githubToken;
-    }
-
-    function resetToken() {
-      localStorage.removeItem("CHUB_GITHUB_TOKEN");
-      githubToken = "";
-      checkToken();
-    }
 
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
@@ -474,65 +125,40 @@
 
     viewport.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const zoomFactor = 0.08;
       const prevZoom = zoomLevel;
-
-      if (e.deltaY < 0) zoomLevel = Math.min(zoomLevel + zoomFactor, 3.0);
-      else zoomLevel = Math.max(zoomLevel - zoomFactor, 0.2);
-
+      zoomLevel = e.deltaY < 0 ? Math.min(zoomLevel + 0.08, 3.0) : Math.max(zoomLevel - 0.08, 0.2);
       const rect = viewport.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
+      const mouseX = e.clientX - rect.left, mouseY = e.clientY - rect.top;
       panX = mouseX - (mouseX - panX) * (zoomLevel / prevZoom);
       panY = mouseY - (mouseY - panY) * (zoomLevel / prevZoom);
       applyTransform();
     }, { passive: false });
 
     viewport.addEventListener('mousedown', (e) => {
-      if (e.target === viewport || e.target.id === 'canvas-bg-grid' || e.target.id === 'canvas-container') {
-        isPanning = true;
-        startPanX = e.clientX - panX;
-        startPanY = e.clientY - startPanY;
+      if (['canvas-viewport', 'canvas-bg-grid', 'canvas-container'].includes(e.target.id)) {
+        isPanning = true; startPanX = e.clientX - panX; startPanY = e.clientY - panY;
         viewport.classList.add('is-panning');
       }
     });
-
-    window.addEventListener('mousemove', (e) => {
-      if (isPanning) {
-        panX = e.clientX - startPanX;
-        panY = e.clientY - startPanY;
-        applyTransform();
-      }
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (isPanning) {
-        isPanning = false;
-        viewport.classList.remove('is-panning');
-      }
-    });
+    window.addEventListener('mousemove', (e) => { if (isPanning) { panX = e.clientX - startPanX; panY = e.clientY - startPanY; applyTransform(); } });
+    window.addEventListener('mouseup', () => { isPanning = false; viewport.classList.remove('is-panning'); });
 
     function openFlowchart() {
-      const home = document.getElementById('home-screen');
-      const flowchart = document.getElementById('flowchart-screen');
-      home.style.opacity = '0';
+      document.getElementById('home-screen').style.opacity = '0';
       setTimeout(() => {
-        home.classList.add('hidden');
-        flowchart.style.display = 'flex';
-        setTimeout(() => {
-          flowchart.style.opacity = '1';
-          loadFromGitHub();
-        }, 50);
+        document.getElementById('home-screen').classList.add('hidden');
+        const screen = document.getElementById('flowchart-screen');
+        screen.style.display = 'flex';
+        setTimeout(() => { screen.style.opacity = '1'; loadFromGitHub(); }, 50);
       }, 300);
     }
 
     function closeFlowchart() {
-      const home = document.getElementById('home-screen');
-      const flowchart = document.getElementById('flowchart-screen');
-      flowchart.style.opacity = '0';
+      const screen = document.getElementById('flowchart-screen');
+      screen.style.opacity = '0';
       setTimeout(() => {
-        flowchart.style.display = 'none';
+        screen.style.display = 'none';
+        const home = document.getElementById('home-screen');
         home.classList.remove('hidden');
         setTimeout(() => home.style.opacity = '1', 50);
       }, 300);
@@ -540,19 +166,13 @@
 
     function selectNode(node) {
       if (selectedNode) selectedNode.classList.remove('selected');
-      if (selectedArrow) {
-        selectedArrow.element.classList.remove('selected');
-        selectedArrow = null;
-      }
       selectedNode = node;
       if (selectedNode) selectedNode.classList.add('selected');
     }
 
     function deselectAll(e) {
-      if (isPanning) return;
-      if (e && (e.target.closest('.node-box') || e.target.closest('.btn') || e.target.classList.contains('arrow-hitbox') || e.target.classList.contains('anchor-point'))) return;
+      if (isPanning || (e && (e.target.closest('.node-box') || e.target.closest('.btn')))) return;
       if (selectedNode) { selectedNode.classList.remove('selected'); selectedNode = null; }
-      if (selectedArrow) { selectedArrow.element.classList.remove('selected'); selectedArrow = null; }
     }
 
     function addNode() {
@@ -560,262 +180,40 @@
       const node = document.createElement('div');
       node.className = 'node-box';
       node.id = `node-${nodeCount}`;
-
       const rect = viewport.getBoundingClientRect();
-      const centerX = (-panX + rect.width / 2) / zoomLevel - 90;
-      const centerY = (-panY + rect.height / 2) / zoomLevel - 50;
-
-      node.style.left = `${centerX + (nodeCount * 15)}px`;
-      node.style.top = `${centerY + (nodeCount * 15)}px`;
-
+      node.style.left = `${(-panX + rect.width / 2) / zoomLevel - 90 + (nodeCount * 10)}px`;
+      node.style.top = `${(-panY + rect.height / 2) / zoomLevel - 50 + (nodeCount * 10)}px`;
       node.innerHTML = `
-        <div class="rotate-handle" title="Arraste para rotacionar">↻</div>
-        <div class="resize-handle" title="Arraste para redimensionar"></div>
         <div class="remove-btn" onclick="removeNode('node-${nodeCount}')">✕</div>
-        <div class="anchor-point" data-dir="top"></div><div class="anchor-point" data-dir="top-right"></div>
-        <div class="anchor-point" data-dir="right"></div><div class="anchor-point" data-dir="bottom-right"></div>
-        <div class="anchor-point" data-dir="bottom"></div><div class="anchor-point" data-dir="bottom-left"></div>
-        <div class="anchor-point" data-dir="left"></div><div class="anchor-point" data-dir="top-left"></div>
-        <div class="node-text" contenteditable="true" data-placeholder="Digite o processo..."></div>
+        <div class="anchor-point" data-dir="top"></div><div class="anchor-point" data-dir="right"></div>
+        <div class="anchor-point" data-dir="bottom"></div><div class="anchor-point" data-dir="left"></div>
+        <div class="node-text" contenteditable="true" data-placeholder="Digite aqui..."></div>
       `;
-
       container.appendChild(node);
-      makeDraggable(node); makeRotatable(node); makeResizable(node); bindAnchors(node); selectNode(node);
+      makeDraggable(node); bindAnchors(node); selectNode(node);
       return node;
     }
 
     function removeNode(nodeId) {
       const el = document.getElementById(nodeId);
-      if (selectedNode === el) selectedNode = null;
       if (el) el.remove();
-      arrows = arrows.filter(a => {
-        if (a.fromNodeId === nodeId || a.toNodeId === nodeId) { a.element.remove(); return false; }
-        return true;
-      });
-      clearDistanceIndicators(); clearGuideLines(); updateArrows();
+      arrows = arrows.filter(a => { if (a.fromNodeId === nodeId || a.toNodeId === nodeId) { a.element.remove(); return false; } return true; });
     }
 
     function makeDraggable(elmnt) {
-      let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-      elmnt.onmousedown = dragMouseDown;
-
-      function dragMouseDown(e) {
+      let p1 = 0, p2 = 0, p3 = 0, p4 = 0;
+      elmnt.onmousedown = (e) => {
         selectNode(elmnt);
-        if (e.target.classList.contains('node-text') || e.target.classList.contains('remove-btn') || 
-            e.target.classList.contains('rotate-handle') || e.target.classList.contains('resize-handle') ||
-            e.target.classList.contains('anchor-point')) return;
-        
-        e.preventDefault(); e.stopPropagation();
-        pos3 = e.clientX; pos4 = e.clientY;
-        document.onmouseup = closeDragElement; document.onmousemove = elementDrag;
-      }
-
-      function elementDrag(e) {
-        e.preventDefault();
-        pos1 = (pos3 - e.clientX) / zoomLevel; pos2 = (pos4 - e.clientY) / zoomLevel;
-        pos3 = e.clientX; pos4 = e.clientY;
-
-        let newTop = elmnt.offsetTop - pos2;
-        let newLeft = elmnt.offsetLeft - pos1;
-
-        const nodes = Array.from(document.querySelectorAll('.node-box')).filter(n => n !== elmnt);
-        const threshold = 6 / zoomLevel; 
-        
-        let targetWidth = elmnt.offsetWidth; 
-        let targetHeight = elmnt.offsetHeight;
-
-        let activeVGuides = [];
-        let activeHGuides = [];
-
-        nodes.forEach(centerNode => {
-          const lefts = nodes.filter(n => (n.offsetLeft + n.offsetWidth) <= centerNode.offsetLeft);
-          const rights = nodes.filter(n => n.offsetLeft >= (centerNode.offsetLeft + centerNode.offsetWidth));
-
-          if (newLeft + targetWidth <= centerNode.offsetLeft) {
-            rights.forEach(rightNode => {
-              let rightGap = rightNode.offsetLeft - (centerNode.offsetLeft + centerNode.offsetWidth);
-              let myGap = centerNode.offsetLeft - (newLeft + targetWidth);
-              if (Math.abs(myGap - rightGap) < threshold) {
-                newLeft = centerNode.offsetLeft - targetWidth - rightGap;
-              }
-            });
-          }
-
-          if (newLeft >= centerNode.offsetLeft + centerNode.offsetWidth) {
-            lefts.forEach(leftNode => {
-              let leftGap = centerNode.offsetLeft - (leftNode.offsetLeft + leftNode.offsetWidth);
-              let myGap = newLeft - (centerNode.offsetLeft + centerNode.offsetWidth);
-              if (Math.abs(myGap - leftGap) < threshold) {
-                newLeft = centerNode.offsetLeft + centerNode.offsetWidth + leftGap;
-              }
-            });
-          }
-        });
-
-        nodes.forEach(other => {
-          let oLeft = other.offsetLeft, oTop = other.offsetTop, oWidth = other.offsetWidth, oHeight = other.offsetHeight;
-          let oRight = oLeft + oWidth, oBottom = oTop + oHeight;
-          let oCenterX = oLeft + oWidth / 2, oCenterY = oTop + oHeight / 2;
-
-          let targetRight = newLeft + targetWidth;
-          let targetBottom = newTop + targetHeight;
-          let targetCenterX = newLeft + targetWidth / 2;
-          let targetCenterY = newTop + targetHeight / 2;
-
-          if (Math.abs(newLeft - oLeft) < threshold) { newLeft = oLeft; activeVGuides.push(oLeft); }
-          else if (Math.abs(targetRight - oRight) < threshold) { newLeft = oRight - targetWidth; activeVGuides.push(oRight); }
-          else if (Math.abs(targetCenterX - oCenterX) < threshold) { newLeft = oCenterX - targetWidth / 2; activeVGuides.push(oCenterX); }
-          else if (Math.abs(newLeft - oRight) < threshold) { newLeft = oRight; activeVGuides.push(oRight); }
-          else if (Math.abs(targetRight - oLeft) < threshold) { newLeft = oLeft - targetWidth; activeVGuides.push(oLeft); }
-
-          if (Math.abs(newTop - oTop) < threshold) { newTop = oTop; activeHGuides.push(oTop); }
-          else if (Math.abs(targetBottom - oBottom) < threshold) { newTop = oBottom - targetHeight; activeHGuides.push(oBottom); }
-          else if (Math.abs(targetCenterY - oCenterY) < threshold) { newTop = oCenterY - targetHeight / 2; activeHGuides.push(oCenterY); }
-          else if (Math.abs(newTop - oBottom) < threshold) { newTop = oBottom; activeHGuides.push(oBottom); }
-          else if (Math.abs(targetBottom - oTop) < threshold) { newTop = oTop - targetHeight; activeHGuides.push(oTop); }
-        });
-
-        elmnt.style.top = newTop + "px"; 
-        elmnt.style.left = newLeft + "px";
-
-        renderGuideLines(activeVGuides, activeHGuides);
-        renderPowerPointDistances(elmnt); 
-        updateArrows();
-      }
-
-      function closeDragElement() {
-        clearGuideLines();
-        clearDistanceIndicators(); 
-        document.onmouseup = null; 
-        document.onmousemove = null;
-      }
-    }
-
-    function renderGuideLines(vPositions, hPositions) {
-      guidesContainer.innerHTML = '';
-      const uniqueV = [...new Set(vPositions)];
-      const uniqueH = [...new Set(hPositions)];
-
-      uniqueV.forEach(x => {
-        const line = document.createElement('div');
-        line.className = 'guide-line vertical';
-        line.style.left = `${x}px`;
-        guidesContainer.appendChild(line);
-      });
-
-      uniqueH.forEach(y => {
-        const line = document.createElement('div');
-        line.className = 'guide-line horizontal';
-        line.style.top = `${y}px`;
-        guidesContainer.appendChild(line);
-      });
-    }
-
-    function clearGuideLines() {
-      guidesContainer.innerHTML = '';
-    }
-
-    function renderPowerPointDistances(activeNode) {
-      const distLayer = document.getElementById('distance-layer');
-      distLayer.innerHTML = '';
-
-      const nodes = Array.from(document.querySelectorAll('.node-box')).map(n => ({
-        el: n, left: n.offsetLeft, top: n.offsetTop,
-        right: n.offsetLeft + n.offsetWidth, bottom: n.offsetTop + n.offsetHeight,
-        width: n.offsetWidth, height: n.offsetHeight, isCurrent: n === activeNode
-      }));
-
-      if (nodes.length < 3) return;
-      const active = nodes.find(n => n.isCurrent), others = nodes.filter(n => !n.isCurrent);
-
-      others.forEach(center => {
-        let leftNode = null, rightNode = null;
-
-        if (active.right <= center.left) {
-          leftNode = active;
-          rightNode = others.find(n => n.left >= center.right);
-        } else if (active.left >= center.right) {
-          rightNode = active;
-          leftNode = others.find(n => n.right <= center.left);
-        }
-
-        if (leftNode && rightNode) {
-          let gapLeft = Math.round(center.left - leftNode.right);
-          let gapRight = Math.round(rightNode.left - center.right);
-
-          if (Math.abs(gapLeft - gapRight) <= 2 && gapLeft > 0) {
-            let drawY = center.top + center.height / 2;
-            drawIndicatorLine(distLayer, leftNode.right, drawY, center.left, drawY, gapLeft, 'horizontal');
-            drawIndicatorLine(distLayer, center.right, drawY, rightNode.left, drawY, gapRight, 'horizontal');
-          }
-        }
-      });
-    }
-
-    function drawIndicatorLine(svg, x1, y1, x2, y2, gap, dir) {
-      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("x1", x1); line.setAttribute("y1", y1); line.setAttribute("x2", x2); line.setAttribute("y2", y2);
-      line.setAttribute("stroke", "#ff0055"); line.setAttribute("stroke-width", "1.5"); line.setAttribute("stroke-dasharray", "3 3");
-
-      const t1 = document.createElementNS("http://www.w3.org/2000/svg", "line"), t2 = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      t1.setAttribute("stroke", "#ff0055"); t1.setAttribute("stroke-width", "2"); t2.setAttribute("stroke", "#ff0055"); t2.setAttribute("stroke-width", "2");
-
-      if (dir === 'vertical') {
-        t1.setAttribute("x1", x1 - 5); t1.setAttribute("y1", y1); t1.setAttribute("x2", x1 + 5); t1.setAttribute("y2", y1);
-        t2.setAttribute("x1", x2 - 5); t2.setAttribute("y1", y2); t2.setAttribute("x2", x2 + 5); t2.setAttribute("y2", y2);
-      } else {
-        t1.setAttribute("x1", x1); t1.setAttribute("y1", y1 - 5); t1.setAttribute("x2", x1); t1.setAttribute("y2", y1 + 5);
-        t2.setAttribute("x1", x2); t2.setAttribute("y1", y2 - 5); t2.setAttribute("x2", x2); t2.setAttribute("y2", y2 + 5);
-      }
-
-      const midX = (x1 + x2) / 2, midY = (y1 + y2) / 2;
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      rect.setAttribute("x", midX - 25); rect.setAttribute("y", midY - 10); rect.setAttribute("width", "50"); rect.setAttribute("height", "20");
-      rect.setAttribute("rx", "4"); rect.setAttribute("fill", "#ff0055");
-
-      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      text.setAttribute("x", midX); text.setAttribute("y", midY + 4); text.setAttribute("fill", "#ffffff"); 
-      text.setAttribute("font-size", "11px"); text.setAttribute("font-weight", "bold"); text.setAttribute("text-anchor", "middle");
-      text.textContent = `${gap}px`;
-
-      g.appendChild(line); g.appendChild(t1); g.appendChild(t2); g.appendChild(rect); g.appendChild(text); svg.appendChild(g);
-    }
-
-    function clearDistanceIndicators() { document.getElementById('distance-layer').innerHTML = ''; }
-
-    function makeResizable(elmnt) {
-      const handle = elmnt.querySelector('.resize-handle');
-      handle.onmousedown = (e) => {
-        e.preventDefault(); e.stopPropagation();
-        const startX = e.clientX, startY = e.clientY;
-        const startW = parseInt(document.defaultView.getComputedStyle(elmnt).width, 10);
-        const startH = parseInt(document.defaultView.getComputedStyle(elmnt).height, 10);
-
-        function doDrag(e) {
-          elmnt.style.width = (startW + (e.clientX - startX) / zoomLevel) + 'px';
-          elmnt.style.height = (startH + (e.clientY - startY) / zoomLevel) + 'px';
-          renderPowerPointDistances(elmnt); updateArrows();
-        }
-
-        function stopDrag() { clearDistanceIndicators(); document.removeEventListener('mousemove', doDrag); document.removeEventListener('mouseup', stopDrag); }
-        document.addEventListener('mousemove', doDrag); document.addEventListener('mouseup', stopDrag);
-      };
-    }
-
-    function makeRotatable(elmnt) {
-      const handle = elmnt.querySelector('.rotate-handle');
-      handle.onmousedown = (e) => {
-        e.preventDefault(); e.stopPropagation();
-        const rect = elmnt.getBoundingClientRect(), centerX = rect.left + rect.width / 2, centerY = rect.top + rect.height / 2;
-
-        function onMouseMove(e) {
-          const rad = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-          elmnt.style.transform = `rotate(${Math.round(rad * (180 / Math.PI)) + 90}deg)`; updateArrows();
-        }
-
-        function onMouseUp() { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
-        document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+        if (e.target.classList.contains('node-text') || e.target.classList.contains('remove-btn') || e.target.classList.contains('anchor-point')) return;
+        p3 = e.clientX; p4 = e.clientY;
+        document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+        document.onmousemove = (e) => {
+          p1 = (p3 - e.clientX) / zoomLevel; p2 = (p4 - e.clientY) / zoomLevel;
+          p3 = e.clientX; p4 = e.clientY;
+          elmnt.style.top = (elmnt.offsetTop - p2) + "px";
+          elmnt.style.left = (elmnt.offsetLeft - p1) + "px";
+          updateArrows();
+        };
       };
     }
 
@@ -823,7 +221,6 @@
       isConnectMode = !isConnectMode;
       document.getElementById('connect-btn').classList.toggle('active', isConnectMode);
       document.body.classList.toggle('connect-mode', isConnectMode);
-      if (!isConnectMode && selectedStartAnchor) { selectedStartAnchor.el.classList.remove('selected-start'); selectedStartAnchor = null; }
     }
 
     function bindAnchors(node) {
@@ -833,264 +230,112 @@
           const dir = anchor.getAttribute('data-dir');
           if (!selectedStartAnchor) {
             selectedStartAnchor = { nodeId: node.id, dir: dir, el: anchor };
-            anchor.classList.add('selected-start'); if (!isConnectMode) toggleConnectMode();
+            anchor.classList.add('selected-start');
+            if (!isConnectMode) toggleConnectMode();
           } else {
-            if (selectedStartAnchor.nodeId === node.id) { selectedStartAnchor.el.classList.remove('selected-start'); selectedStartAnchor = null; return; }
-            createArrowBetweenAnchors(selectedStartAnchor.nodeId, selectedStartAnchor.dir, node.id, dir);
-            selectedStartAnchor.el.classList.remove('selected-start'); selectedStartAnchor = null;
+            createArrow(selectedStartAnchor.nodeId, selectedStartAnchor.dir, node.id, dir);
+            selectedStartAnchor.el.classList.remove('selected-start');
+            selectedStartAnchor = null;
           }
         };
       });
     }
 
-    function createArrowBetweenAnchors(fromNodeId, fromDir, toNodeId, toDir, customId = null) {
-      if (!customId) arrowCount++;
-      const arrowId = customId || `arrow-${arrowCount}`;
-
-      const svg = document.getElementById('svg-layer'), g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-      g.setAttribute("class", "arrow-group"); g.setAttribute("id", arrowId);
-      const hitbox = document.createElementNS("http://www.w3.org/2000/svg", "path"), path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    function createArrow(fromId, fromDir, toId, toDir, customId = null) {
+      arrowCount++;
+      const id = customId || `arrow-${arrowCount}`;
+      const svg = document.getElementById('svg-layer');
+      const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      g.setAttribute("class", "arrow-group"); g.setAttribute("id", id);
+      const hitbox = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       hitbox.setAttribute("class", "arrow-hitbox"); path.setAttribute("class", "arrow-path"); path.setAttribute("marker-end", "url(#arrowhead)");
-      
-      const arrowObj = { id: arrowId, element: g, path: path, hitbox: hitbox, fromNodeId: fromNodeId, fromDir: fromDir, toNodeId: toNodeId, toDir: toDir };
-      hitbox.onclick = (e) => { e.stopPropagation(); removeArrow(arrowObj.id); };
-      g.appendChild(hitbox); g.appendChild(path); svg.appendChild(g); arrows.push(arrowObj); updateArrows();
+      g.appendChild(hitbox); g.appendChild(path); svg.appendChild(g);
+      const obj = { id, element: g, path, hitbox, fromNodeId: fromId, fromDir, toNodeId: toId, toDir };
+      hitbox.onclick = () => { g.remove(); arrows = arrows.filter(a => a.id !== id); };
+      arrows.push(obj); updateArrows();
     }
 
-    function removeArrow(arrowId) {
-      const idx = arrows.findIndex(a => a.id === arrowId);
-      if (idx !== -1) { arrows[idx].element.remove(); if (selectedArrow === arrows[idx]) selectedArrow = null; arrows.splice(idx, 1); }
-    }
-
-    function getAnchorData(nodeEl, dir) {
-      const left = nodeEl.offsetLeft;
-      const top = nodeEl.offsetTop;
-      const width = nodeEl.offsetWidth;
-      const height = nodeEl.offsetHeight;
-
-      let x = left + width / 2;
-      let y = top + height / 2;
-
-      switch (dir) {
-        case 'top':          y = top; break;
-        case 'top-right':    x = left + width; y = top; break;
-        case 'right':        x = left + width; break;
-        case 'bottom-right': x = left + width; y = top + height; break;
-        case 'bottom':       y = top + height; break;
-        case 'bottom-left':  x = left; y = top + height; break;
-        case 'left':         x = left; break;
-        case 'top-left':     x = left; y = top; break;
-      }
-      return { x, y };
+    function getAnchorCoords(nodeEl, dir) {
+      const l = nodeEl.offsetLeft, t = nodeEl.offsetTop, w = nodeEl.offsetWidth, h = nodeEl.offsetHeight;
+      if (dir === 'top') return { x: l + w / 2, y: t };
+      if (dir === 'right') return { x: l + w, y: t + h / 2 };
+      if (dir === 'bottom') return { x: l + w / 2, y: t + h };
+      return { x: l, y: t + h / 2 };
     }
 
     function updateArrows() {
-      arrows.forEach((a) => {
-        const fromEl = document.getElementById(a.fromNodeId);
-        const toEl = document.getElementById(a.toNodeId);
-        if (!fromEl || !toEl) return;
-
-        const start = getAnchorData(fromEl, a.fromDir);
-        const end = getAnchorData(toEl, a.toDir);
-
-        const pathD = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
-
-        a.path.setAttribute("d", pathD);
-        a.hitbox.setAttribute("d", pathD);
+      arrows.forEach(a => {
+        const f = document.getElementById(a.fromNodeId), t = document.getElementById(a.toNodeId);
+        if (!f || !t) return;
+        const s = getAnchorCoords(f, a.fromDir), e = getAnchorCoords(t, a.toDir);
+        const d = `M ${s.x} ${s.y} L ${e.x} ${e.y}`;
+        a.path.setAttribute("d", d); a.hitbox.setAttribute("d", d);
       });
-    }
-
-    document.addEventListener('keydown', (e) => {
-      if (document.activeElement && document.activeElement.isContentEditable) return;
-      if (e.key === 'Delete' || e.key === 'Backspace') {
-        if (selectedArrow) removeArrow(selectedArrow.id); else if (selectedNode) removeNode(selectedNode.id);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && selectedNode) {
-        copiedNodeData = {
-          width: selectedNode.style.width, height: selectedNode.style.height, transform: selectedNode.style.transform,
-          text: selectedNode.querySelector('.node-text') ? selectedNode.querySelector('.node-text').innerHTML : '',
-          left: selectedNode.offsetLeft, top: selectedNode.offsetTop
-        };
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && copiedNodeData) {
-        const newNode = addNode();
-        if (copiedNodeData.width) newNode.style.width = copiedNodeData.width;
-        if (copiedNodeData.height) newNode.style.height = copiedNodeData.height;
-        if (copiedNodeData.transform) newNode.style.transform = copiedNodeData.transform;
-        
-        newNode.style.left = (copiedNodeData.left + 30) + 'px'; newNode.style.top = (copiedNodeData.top + 30) + 'px';
-        const textEl = newNode.querySelector('.node-text'); if (textEl) textEl.innerHTML = copiedNodeData.text;
-        copiedNodeData.left += 30; copiedNodeData.top += 30; selectNode(newNode); updateArrows();
-      }
-    });
-
-    // =========================================================
-    // 🌐 SISTEMA DE INTEGRAÇÃO COM A API DO GITHUB (PERSISTÊNCIA)
-    // =========================================================
-
-    function getCanvasState() {
-      const nodesData = [];
-      document.querySelectorAll('.node-box').forEach(node => {
-        const textEl = node.querySelector('.node-text');
-        nodesData.push({
-          id: node.id,
-          left: node.style.left,
-          top: node.style.top,
-          width: node.style.width,
-          height: node.style.height,
-          transform: node.style.transform,
-          text: textEl ? textEl.innerHTML : ''
-        });
-      });
-
-      const arrowsData = arrows.map(a => ({
-        id: a.id,
-        fromNodeId: a.fromNodeId,
-        fromDir: a.fromDir,
-        toNodeId: a.toNodeId,
-        toDir: a.toDir
-      }));
-
-      return {
-        nodeCount,
-        arrowCount,
-        zoomLevel,
-        panX,
-        panY,
-        nodes: nodesData,
-        arrows: arrowsData
-      };
-    }
-
-    function loadCanvasState(state) {
-      document.querySelectorAll('.node-box').forEach(n => n.remove());
-      arrows.forEach(a => a.element.remove());
-      arrows = [];
-
-      if (!state) return;
-
-      nodeCount = state.nodeCount || 0;
-      arrowCount = state.arrowCount || 0;
-      if (state.zoomLevel) zoomLevel = state.zoomLevel;
-      if (state.panX !== undefined) panX = state.panX;
-      if (state.panY !== undefined) panY = state.panY;
-      applyTransform();
-
-      if (state.nodes && Array.isArray(state.nodes)) {
-        state.nodes.forEach(nData => {
-          const node = document.createElement('div');
-          node.className = 'node-box';
-          node.id = nData.id;
-          node.style.left = nData.left;
-          node.style.top = nData.top;
-          if (nData.width) node.style.width = nData.width;
-          if (nData.height) node.style.height = nData.height;
-          if (nData.transform) node.style.transform = nData.transform;
-
-          node.innerHTML = `
-            <div class="rotate-handle" title="Arraste para rotacionar">↻</div>
-            <div class="resize-handle" title="Arraste para redimensionar"></div>
-            <div class="remove-btn" onclick="removeNode('${nData.id}')">✕</div>
-            <div class="anchor-point" data-dir="top"></div><div class="anchor-point" data-dir="top-right"></div>
-            <div class="anchor-point" data-dir="right"></div><div class="anchor-point" data-dir="bottom-right"></div>
-            <div class="anchor-point" data-dir="bottom"></div><div class="anchor-point" data-dir="bottom-left"></div>
-            <div class="anchor-point" data-dir="left"></div><div class="anchor-point" data-dir="top-left"></div>
-            <div class="node-text" contenteditable="true" data-placeholder="Digite o processo...">${nData.text || ''}</div>
-          `;
-
-          container.appendChild(node);
-          makeDraggable(node); makeRotatable(node); makeResizable(node); bindAnchors(node);
-        });
-      }
-
-      if (state.arrows && Array.isArray(state.arrows)) {
-        state.arrows.forEach(aData => {
-          createArrowBetweenAnchors(aData.fromNodeId, aData.fromDir, aData.toNodeId, aData.toDir, aData.id);
-        });
-      }
-
-      updateArrows();
     }
 
     async function loadFromGitHub() {
-      const token = checkToken();
-      if (!token) return;
-      
-      githubStatus.textContent = "Carregando...";
+      if (!githubToken) {
+        githubStatus.textContent = "Token não configurado";
+        return;
+      }
+      githubStatus.textContent = "Conectando...";
       const url = `https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
-
       try {
-        const res = await fetch(url, {
-          headers: {
-            "Authorization": `token ${token}`
-          }
-        });
+        const res = await fetch(url, { headers: { "Authorization": `token ${githubToken}` } });
         if (res.ok) {
           const data = await res.json();
           fileSHA = data.sha;
-          const jsonText = decodeURIComponent(escape(atob(data.content)));
-          const state = JSON.parse(jsonText);
-          loadCanvasState(state);
-          githubStatus.textContent = "Carregado!";
-          setTimeout(() => { githubStatus.textContent = ""; }, 3000);
+          const state = JSON.parse(decodeURIComponent(escape(atob(data.content))));
+          loadState(state);
+          githubStatus.textContent = "Pronto!";
+        } else if (res.status === 404) {
+          githubStatus.textContent = "Novo Arquivo";
         } else if (res.status === 401) {
-          alert("Token inválido ou revogado pelo GitHub. Por favor insira um novo token válido.");
-          resetToken();
-        } else {
-          githubStatus.textContent = "Sem arquivo salvo";
+          githubStatus.textContent = "Token Inválido/Expirado";
         }
-      } catch (e) {
-        console.error(e);
-        githubStatus.textContent = "Erro ao carregar";
-      }
+      } catch (e) { githubStatus.textContent = "Erro de Conexão"; }
     }
 
     async function saveToGitHub() {
-      const token = checkToken();
-      if (!token) {
-        alert("Erro: O Token é necessário para salvar no GitHub.");
-        return;
-      }
-
+      if (!githubToken) return alert("Token não encontrado!");
       githubStatus.textContent = "Salvando...";
       const url = `https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
-      
-      const state = getCanvasState();
-      const jsonStr = JSON.stringify(state, null, 2);
-      const base64Content = btoa(unescape(encodeURIComponent(jsonStr)));
-
+      const state = getState();
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(state, null, 2))));
       try {
-        const body = {
-          message: "Atualização de fluxograma via CHUB Studio",
-          content: base64Content
-        };
+        const body = { message: "Atualização de equipe via CHUB", content };
         if (fileSHA) body.sha = fileSHA;
-
-        const res = await fetch(url, {
-          method: "PUT",
-          headers: {
-            "Authorization": `token ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(body)
-        });
-
+        const res = await fetch(url, { method: "PUT", headers: { "Authorization": `token ${githubToken}`, "Content-Type": "application/json" }, body: JSON.stringify(body) });
         if (res.ok) {
           const resData = await res.json();
           fileSHA = resData.content.sha;
           githubStatus.textContent = "Salvo com sucesso!";
-          setTimeout(() => { githubStatus.textContent = ""; }, 3000);
-        } else if (res.status === 401) {
-          alert("Erro: Seu token do GitHub é inválido ou foi revogado. Insira um novo token.");
-          resetToken();
         } else {
-          githubStatus.textContent = "Erro ao salvar";
-          alert(`Erro ao salvar no GitHub! Status: ${res.status}. Verifique o nome do repositório ("${GITHUB_CONFIG.repo}") e usuario.`);
+          githubStatus.textContent = "Erro ao Salvar";
         }
-      } catch (e) {
-        console.error(e);
-        githubStatus.textContent = "Erro de conexão";
-      }
+      } catch (e) { githubStatus.textContent = "Erro de conexão"; }
+    }
+
+    function getState() {
+      const nodes = Array.from(document.querySelectorAll('.node-box')).map(n => ({
+        id: n.id, left: n.style.left, top: n.style.top, text: n.querySelector('.node-text').innerHTML
+      }));
+      const arrowsData = arrows.map(a => ({ id: a.id, fromNodeId: a.fromNodeId, fromDir: a.fromDir, toNodeId: a.toNodeId, toDir: a.toDir }));
+      return { nodeCount, arrowCount, zoomLevel, panX, panY, nodes, arrows: arrowsData };
+    }
+
+    function loadState(s) {
+      if (!s) return;
+      document.querySelectorAll('.node-box').forEach(n => n.remove());
+      arrows.forEach(a => a.element.remove());
+      arrows = [];
+      nodeCount = s.nodeCount || 0; arrowCount = s.arrowCount || 0;
+      if (s.nodes) s.nodes.forEach(n => {
+        const node = addNode(); node.id = n.id; node.style.left = n.left; node.style.top = n.top;
+        node.querySelector('.node-text').innerHTML = n.text || '';
+      });
+      if (s.arrows) s.arrows.forEach(a => createArrow(a.fromNodeId, a.fromDir, a.toNodeId, a.toDir, a.id));
     }
   </script>
 </body>
