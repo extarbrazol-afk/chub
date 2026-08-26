@@ -44,9 +44,9 @@
     .folder-card:hover { border-color: var(--accent-blue); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
     .folder-top { display: flex; justify-content: space-between; align-items: flex-start; }
     .folder-icon { font-size: 2rem; color: var(--accent-blue); }
-    .folder-delete { background: transparent; border: none; color: var(--text-sub); font-size: 1.1rem; cursor: pointer; opacity: 0; transition: opacity 0.2s; padding: 4px; }
+    .folder-delete { background: transparent; border: none; color: var(--text-sub); font-size: 1.2rem; cursor: pointer; opacity: 0; transition: opacity 0.2s; padding: 4px 8px; border-radius: 6px; z-index: 5; }
     .folder-card:hover .folder-delete { opacity: 1; }
-    .folder-delete:hover { color: var(--arrow-delete); }
+    .folder-delete:hover { color: #fff; background-color: var(--arrow-delete); }
     .folder-info .folder-name { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .folder-info .folder-category { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-blue); background: rgba(52, 131, 250, 0.1); padding: 4px 8px; border-radius: 6px; display: inline-block; }
 
@@ -198,7 +198,7 @@
   </div>
 
   <script>
-    const SECURITY_PIN = "5t7gb7nb@";
+    const SECURITY_PIN = "1234";
 
     const DB_CONFIG = {
       binId: "6a8f27b1da38895dfe143e4e",
@@ -226,7 +226,7 @@
       }
     }
 
-
+    /* SISTEMA DE AUTENTICAÇÃO COM SENHA */
     function requestAuth(actionType, payload = null) {
       pendingAction = { type: actionType, payload: payload };
       const authTitle = document.getElementById('auth-title');
@@ -258,11 +258,13 @@
       const errorMsg = document.getElementById('auth-error');
 
       if (pin === SECURITY_PIN) {
+        const actionToExecute = pendingAction;
         closeAuthModal();
-        if (pendingAction) {
-          if (pendingAction.type === 'delete') {
-            executeDeleteFolder(pendingAction.payload);
-          } else if (pendingAction.type === 'save') {
+        
+        if (actionToExecute) {
+          if (actionToExecute.type === 'delete') {
+            executeDeleteFolder(actionToExecute.payload);
+          } else if (actionToExecute.type === 'save') {
             saveToDatabase();
           }
         }
@@ -275,7 +277,7 @@
       if (e.key === 'Enter') confirmAuth();
     });
 
-
+    /* SISTEMA DE PASTAS */
     function openFolderModal() {
       document.getElementById('folder-modal').classList.add('active');
       document.getElementById('folder-name-input').focus();
@@ -307,7 +309,11 @@
     }
 
     function deleteFolder(e, folderId) {
-      e.stopPropagation();
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      }
       requestAuth('delete', folderId);
     }
 
@@ -354,6 +360,7 @@
       });
     }
 
+    /* INTEGRACÃO COM BANCO DE DADOS */
     async function loadFromDatabase() {
       dbStatus.textContent = "Carregando...";
       try {
@@ -404,6 +411,7 @@
       }
     }
 
+    /* MOTOR DO CANVAS & FLUXOGRAMA */
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
       zoomIndicator.textContent = `${Math.round(zoomLevel * 100)}%`;
