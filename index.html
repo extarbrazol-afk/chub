@@ -44,7 +44,7 @@
     .folder-card:hover { border-color: var(--accent-blue); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.4); }
     .folder-top { display: flex; justify-content: space-between; align-items: flex-start; }
     .folder-icon { font-size: 2rem; color: var(--accent-blue); }
-    .folder-delete { background: transparent; border: none; color: var(--text-sub); font-size: 1.1rem; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
+    .folder-delete { background: transparent; border: none; color: var(--text-sub); font-size: 1.1rem; cursor: pointer; opacity: 0; transition: opacity 0.2s; padding: 4px; }
     .folder-card:hover .folder-delete { opacity: 1; }
     .folder-delete:hover { color: var(--arrow-delete); }
     .folder-info .folder-name { font-size: 1.1rem; font-weight: 600; color: var(--text-main); margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -66,7 +66,6 @@
     .btn-save { border-color: #2e7d32; background: #1b5e20; }
     .btn-save:hover { background: #2e7d32; }
     .btn-back { background: transparent; border: 1px solid var(--card-border); color: var(--text-sub); }
-    .btn-danger { background: var(--arrow-delete); border-color: var(--arrow-delete); color: #fff; }
 
     /* MODAIS */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.2s ease; }
@@ -199,7 +198,7 @@
   </div>
 
   <script>
-    const SECURITY_PIN = "5t7gb7nb@";
+    const SECURITY_PIN = "1234";
 
     const DB_CONFIG = {
       binId: "6a8f27b1da38895dfe143e4e",
@@ -300,10 +299,11 @@
         diagramData: { nodeCount: 0, arrowCount: 0, zoomLevel: 1, panX: 0, panY: 0, nodes: [], arrows: [] }
       };
 
+      if (!globalStore.folders) globalStore.folders = [];
       globalStore.folders.push(newFolder);
       closeFolderModal();
-      saveToDatabaseDirect();
       renderFolders();
+      saveToDatabaseDirect();
     }
 
     function deleteFolder(e, folderId) {
@@ -313,8 +313,8 @@
 
     function executeDeleteFolder(folderId) {
       globalStore.folders = globalStore.folders.filter(f => f.id !== folderId);
-      saveToDatabaseDirect();
       renderFolders();
+      saveToDatabaseDirect();
     }
 
     function openFolder(folderId) {
