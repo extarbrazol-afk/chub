@@ -56,6 +56,19 @@
     .header-left { display: flex; align-items: center; gap: 16px; }
     .active-folder-tag { font-size: 0.85rem; color: var(--accent-blue); background: rgba(52, 131, 250, 0.15); padding: 4px 10px; border-radius: 6px; font-weight: 600; }
     .toolbar { display: flex; gap: 10px; align-items: center; }
+    
+    select.select-style {
+      background: var(--node-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    select.select-style:focus { border-color: var(--accent-blue); }
+
     .zoom-indicator, .db-status { font-size: 0.85rem; color: var(--text-sub); margin-left: 10px; }
     .db-status { color: #00ffcc; font-weight: bold; }
     
@@ -93,7 +106,6 @@
 
     #svg-layer { position: absolute; top: 0; left: 0; width: 10000px; height: 10000px; pointer-events: none; z-index: 5; }
 
-    /* NOVO: Propriedades resize e overflow adicionadas para redimensionar o retângulo */
     .node-box { 
       position: absolute; 
       width: 180px; 
@@ -118,7 +130,6 @@
     .node-text { width: 100%; height: 100%; outline: none; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 0.95rem; color: var(--text-main); word-break: break-word; cursor: text; }
     .node-text:empty:before { content: attr(data-placeholder); color: var(--text-sub); opacity: 0.6; }
     
-    /* BOTÃO REMOVER DO NÓ */
     .node-box .remove-btn { 
       position: absolute; 
       top: 4px; 
@@ -147,7 +158,7 @@
     .arrow-group { cursor: pointer; }
     .arrow-hitbox { stroke: transparent; stroke-width: 16px; fill: none; pointer-events: stroke; }
     .arrow-path { stroke: var(--arrow-color); stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; fill: none; pointer-events: none; }
-    .arrow-group:hover .arrow-path { stroke: var(--arrow-delete); stroke-width: 3px; marker-end: url(#arrowhead-red); }
+    .arrow-group:hover .arrow-path { stroke: var(--arrow-delete); stroke-width: 3px; }
   </style>
 </head>
 <body>
@@ -181,6 +192,13 @@
       <div class="toolbar">
         <button class="btn" onclick="addNode()">+ Adicionar Retângulo</button>
         <button class="btn" id="connect-btn" onclick="toggleConnectMode()">➔ Conectar Blocos</button>
+        
+        <!-- SELETOR DE ESTILO DE LINHA -->
+        <select id="line-style-select" class="select-style" onchange="updateArrows()">
+          <option value="orthogonal">Estilo: Ortogonal (Árvore)</option>
+          <option value="straight">Estilo: Linha Reta</option>
+        </select>
+
         <button class="btn btn-save" onclick="requestAuth('save')">💾 Salvar na Nuvem</button>
         <span class="zoom-indicator" id="zoom-indicator">100%</span>
         <span class="db-status" id="db-status"></span>
@@ -192,20 +210,10 @@
       <div id="canvas-container">
         <div id="canvas-bg-grid"></div>
         
-        <!-- LINHAS GUIAS DE ALINHAMENTO -->
         <div id="guide-v" class="guide-line v-guide"></div>
         <div id="guide-h" class="guide-line h-guide"></div>
 
-        <svg id="svg-layer">
-          <defs>
-            <marker id="arrowhead" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-              <path d="M 0 0 L 8 4 L 0 8 Z" fill="#6c7280" />
-            </marker>
-            <marker id="arrowhead-red" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-              <path d="M 0 0 L 8 4 L 0 8 Z" fill="#ff4d4d" />
-            </marker>
-          </defs>
-        </svg>
+        <svg id="svg-layer"></svg>
       </div>
     </main>
   </div>
@@ -276,7 +284,6 @@
       }
     }
 
-    /* SISTEMA DE AUTENTICAÇÃO COM SENHA */
     function requestAuth(actionType, payload = null) {
       pendingAction = { type: actionType, payload: payload };
       const authTitle = document.getElementById('auth-title');
@@ -327,7 +334,6 @@
       if (e.key === 'Enter') confirmAuth();
     });
 
-    /* SISTEMA DE PASTAS */
     function openFolderModal() {
       document.getElementById('folder-modal').classList.add('active');
       document.getElementById('folder-name-input').focus();
@@ -348,7 +354,7 @@
         id: 'folder_' + Date.now(),
         name: name,
         category: category,
-        diagramData: { nodeCount: 0, arrowCount: 0, zoomLevel: 1, panX: 0, panY: 0, nodes: [], arrows: [] }
+        diagramData: { nodeCount: 0, arrowCount: 0, zoomLevel: 1, panX: 0, panY: 0, lineStyle: 'orthogonal', nodes: [], arrows: [] }
       };
 
       if (!globalStore.folders) globalStore.folders = [];
@@ -410,7 +416,6 @@
       });
     }
 
-    /* INTEGRACÃO COM BANCO DE DADOS */
     async function loadFromDatabase() {
       dbStatus.textContent = "Carregando...";
       try {
@@ -461,7 +466,6 @@
       }
     }
 
-    /* MOTOR DO CANVAS & FLUXOGRAMA */
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
       zoomIndicator.textContent = `${Math.round(zoomLevel * 100)}%`;
@@ -515,13 +519,11 @@
         <div class="node-text" contenteditable="true" data-placeholder="Digite aqui..."></div>
       `;
       
-      // Evento explícito de remoção no botão X
       node.querySelector('.remove-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         removeNode(id);
       });
 
-      // Atualiza o desenho das setas em tempo real ao redimensionar
       new ResizeObserver(() => {
         updateArrows();
       }).observe(node);
@@ -550,7 +552,6 @@
       elmnt.onmousedown = (e) => {
         selectNode(elmnt);
         
-        // Evita arrastar a caixa ao clicar no texto, botões, ancoras ou na alça de redimensionamento
         const rect = elmnt.getBoundingClientRect();
         const isResizeHandle = (e.clientX > rect.right - 16 && e.clientY > rect.bottom - 16);
         if (e.target.classList.contains('node-text') || 
@@ -594,7 +595,6 @@
             let oW = other.offsetWidth;
             let oH = other.offsetHeight;
 
-            // MAGNETISMO EIXO X
             if (Math.abs(newX - oX) < snapThreshold) { 
               newX = oX; snapX = oX; 
             } else if (Math.abs((newX + w/2) - (oX + oW/2)) < snapThreshold) { 
@@ -603,7 +603,6 @@
               newX = oX + oW - w; snapX = oX + oW; 
             }
 
-            // MAGNETISMO EIXO Y
             if (Math.abs(newY - oY) < snapThreshold) { 
               newY = oY; snapY = oY; 
             } else if (Math.abs((newY + h/2) - (oY + oH/2)) < snapThreshold) { 
@@ -666,7 +665,7 @@
       g.setAttribute("class", "arrow-group"); g.setAttribute("id", id);
       const hitbox = document.createElementNS("http://www.w3.org/2000/svg", "path");
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      hitbox.setAttribute("class", "arrow-hitbox"); path.setAttribute("class", "arrow-path"); path.setAttribute("marker-end", "url(#arrowhead)");
+      hitbox.setAttribute("class", "arrow-hitbox"); path.setAttribute("class", "arrow-path");
       g.appendChild(hitbox); g.appendChild(path); svg.appendChild(g);
       const obj = { id, element: g, path, hitbox, fromNodeId: fromId, fromDir, toNodeId: toId, toDir };
       hitbox.onclick = () => { g.remove(); arrows = arrows.filter(a => a.id !== id); };
@@ -681,13 +680,36 @@
       return { x: l, y: t + h / 2 };
     }
 
+    /* DESENHO DINÂMICO DE LINHAS (ORTOGONAL E RETAS) */
     function updateArrows() {
+      const style = document.getElementById('line-style-select').value;
+
       arrows.forEach(a => {
         const f = document.getElementById(a.fromNodeId), t = document.getElementById(a.toNodeId);
         if (!f || !t) return;
         const s = getAnchorCoords(f, a.fromDir), e = getAnchorCoords(t, a.toDir);
-        const d = `M ${s.x} ${s.y} L ${e.x} ${e.y}`;
-        a.path.setAttribute("d", d); a.hitbox.setAttribute("d", d);
+        
+        let d = "";
+
+        if (style === 'straight') {
+          // Linha Reta direta entre pontos
+          d = `M ${s.x} ${s.y} L ${e.x} ${e.y}`;
+        } else {
+          // Linha Ortogonal (Estilo Árvore/Ramificação)
+          if (a.fromDir === 'bottom' && a.toDir === 'top') {
+            const midY = s.y + (e.y - s.y) / 2;
+            d = `M ${s.x} ${s.y} V ${midY} H ${e.x} V ${e.y}`;
+          } else if (a.fromDir === 'left' || a.fromDir === 'right') {
+            const midX = s.x + (e.x - s.x) / 2;
+            d = `M ${s.x} ${s.y} H ${midX} V ${e.y} H ${e.x}`;
+          } else {
+            const midY = s.y + (e.y - s.y) / 2;
+            d = `M ${s.x} ${s.y} V ${midY} H ${e.x} V ${e.y}`;
+          }
+        }
+
+        a.path.setAttribute("d", d); 
+        a.hitbox.setAttribute("d", d);
       });
     }
 
@@ -701,7 +723,16 @@
         text: n.querySelector('.node-text').innerHTML
       }));
       const arrowsData = arrows.map(a => ({ id: a.id, fromNodeId: a.fromNodeId, fromDir: a.fromDir, toNodeId: a.toNodeId, toDir: a.toDir }));
-      return { nodeCount, arrowCount, zoomLevel, panX, panY, nodes, arrows: arrowsData };
+      return { 
+        nodeCount, 
+        arrowCount, 
+        zoomLevel, 
+        panX, 
+        panY, 
+        lineStyle: document.getElementById('line-style-select').value,
+        nodes, 
+        arrows: arrowsData 
+      };
     }
 
     function loadState(s) {
@@ -711,6 +742,11 @@
       if (!s) return;
       nodeCount = s.nodeCount || 0; arrowCount = s.arrowCount || 0;
       zoomLevel = s.zoomLevel || 1; panX = s.panX || 0; panY = s.panY || 0;
+      
+      if (s.lineStyle) {
+        document.getElementById('line-style-select').value = s.lineStyle;
+      }
+
       applyTransform();
 
       if (s.nodes) s.nodes.forEach(n => {
