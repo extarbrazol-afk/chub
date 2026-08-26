@@ -1,6 +1,6 @@
 {
-  "nodeCount": 3,
-  "arrowCount": 1,
+  "nodeCount": 5,
+  "arrowCount": 2,
   "zoomLevel": 1,
   "panX": 0,
   "panY": 0,
@@ -22,6 +22,15 @@
       "height": "",
       "transform": "",
       "text": ""
+    },
+    {
+      "id": "node-4",
+      "left": "839px",
+      "top": "93px",
+      "width": "",
+      "height": "",
+      "transform": "",
+      "text": ""
     }
   ],
   "arrows": [
@@ -31,6 +40,13 @@
       "fromDir": "left",
       "toNodeId": "node-2",
       "toDir": "right"
+    },
+    {
+      "id": "arrow-2",
+      "fromNodeId": "node-1",
+      "fromDir": "top-right",
+      "toNodeId": "node-4",
+      "toDir": "bottom-left"
     }
   ]
 }
