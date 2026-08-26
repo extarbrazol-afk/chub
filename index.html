@@ -383,6 +383,7 @@
         <button class="btn" onclick="addNode()">+ Adicionar Retângulo</button>
         <button class="btn" id="connect-btn" onclick="toggleConnectMode()">➔ Conectar Blocos</button>
         <button class="btn btn-save" id="save-btn" onclick="saveToGitHub()">💾 Salvar no GitHub</button>
+        <button class="btn" onclick="resetToken()">🔑 Alterar Token</button>
         <span class="zoom-indicator" id="zoom-indicator">100%</span>
         <span class="github-status" id="github-status"></span>
       </div>
@@ -416,17 +417,16 @@
 
   <script>
     // =========================================================
-    // ⚙️ PREENCHA COM AS SUAS INFORMAÇÕES DO GITHUB AQUI ABAIXO:
+    // ⚙️ CONFIGURAÇÕES DO GITHUB (Sem expor o Token no código)
     // =========================================================
     const GITHUB_CONFIG = {
-      user: "extarbrazol-afk",    // Exemplo: "joaosilva"
-      repo: "chub",  // Exemplo: "chub-flowchart"
-      filePath: "dados.json",           // Nome do arquivo onde será salvo
-      token: "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"       // Seu token ghp_...
+      user: "extarbrazol-afk",
+      repo: "chub",
+      filePath: "dados.json"
     };
-    // =========================================================
 
-    let fileSHA = ""; // Guarda o Hash da versão do arquivo no GitHub
+    let githubToken = localStorage.getItem("CHUB_GITHUB_TOKEN") || "";
+    let fileSHA = "";
 
     let nodeCount = 0;
     let arrowCount = 0;
@@ -449,6 +449,23 @@
     const zoomIndicator = document.getElementById('zoom-indicator');
     const guidesContainer = document.getElementById('guides-container');
     const githubStatus = document.getElementById('github-status');
+
+    function checkToken() {
+      if (!githubToken) {
+        githubToken = prompt("Cole seu NOVO Personal Access Token do GitHub (ghp_...):");
+        if (githubToken) {
+          githubToken = githubToken.trim();
+          localStorage.setItem("CHUB_GITHUB_TOKEN", githubToken);
+        }
+      }
+      return githubToken;
+    }
+
+    function resetToken() {
+      localStorage.removeItem("CHUB_GITHUB_TOKEN");
+      githubToken = "";
+      checkToken();
+    }
 
     function applyTransform() {
       container.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
@@ -505,7 +522,7 @@
         flowchart.style.display = 'flex';
         setTimeout(() => {
           flowchart.style.opacity = '1';
-          loadFromGitHub(); // Carrega os dados ao abrir a tela
+          loadFromGitHub();
         }, 50);
       }, 300);
     }
@@ -946,7 +963,6 @@
     }
 
     function loadCanvasState(state) {
-      // Limpa a tela antes de restaurar
       document.querySelectorAll('.node-box').forEach(n => n.remove());
       arrows.forEach(a => a.element.remove());
       arrows = [];
@@ -960,7 +976,6 @@
       if (state.panY !== undefined) panY = state.panY;
       applyTransform();
 
-      // Recria os nós/blocos
       if (state.nodes && Array.isArray(state.nodes)) {
         state.nodes.forEach(nData => {
           const node = document.createElement('div');
@@ -988,7 +1003,6 @@
         });
       }
 
-      // Recria as setas de conexão
       if (state.arrows && Array.isArray(state.arrows)) {
         state.arrows.forEach(aData => {
           createArrowBetweenAnchors(aData.fromNodeId, aData.fromDir, aData.toNodeId, aData.toDir, aData.id);
@@ -999,7 +1013,8 @@
     }
 
     async function loadFromGitHub() {
-      if (GITHUB_CONFIG.user === "SEU_USUARIO_DO_GITHUB") return;
+      const token = checkToken();
+      if (!token) return;
       
       githubStatus.textContent = "Carregando...";
       const url = `https://api.github.com/repos/${GITHUB_CONFIG.user}/${GITHUB_CONFIG.repo}/contents/${GITHUB_CONFIG.filePath}`;
@@ -1007,7 +1022,7 @@
       try {
         const res = await fetch(url, {
           headers: {
-            "Authorization": `token ${GITHUB_CONFIG.token}`
+            "Authorization": `token ${token}`
           }
         });
         if (res.ok) {
@@ -1018,6 +1033,9 @@
           loadCanvasState(state);
           githubStatus.textContent = "Carregado!";
           setTimeout(() => { githubStatus.textContent = ""; }, 3000);
+        } else if (res.status === 401) {
+          alert("Token inválido ou revogado pelo GitHub. Por favor insira um novo token válido.");
+          resetToken();
         } else {
           githubStatus.textContent = "Sem arquivo salvo";
         }
@@ -1028,8 +1046,9 @@
     }
 
     async function saveToGitHub() {
-      if (GITHUB_CONFIG.user === "SEU_USUARIO_DO_GITHUB" || GITHUB_CONFIG.token === "SEU_TOKEN_GHP_AQUI") {
-        alert("Aviso: Preencha as suas informações de USER, REPO e TOKEN no topo da tag <script> do HTML!");
+      const token = checkToken();
+      if (!token) {
+        alert("Erro: O Token é necessário para salvar no GitHub.");
         return;
       }
 
@@ -1050,7 +1069,7 @@
         const res = await fetch(url, {
           method: "PUT",
           headers: {
-            "Authorization": `token ${GITHUB_CONFIG.token}`,
+            "Authorization": `token ${token}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify(body)
@@ -1061,9 +1080,12 @@
           fileSHA = resData.content.sha;
           githubStatus.textContent = "Salvo com sucesso!";
           setTimeout(() => { githubStatus.textContent = ""; }, 3000);
+        } else if (res.status === 401) {
+          alert("Erro: Seu token do GitHub é inválido ou foi revogado. Insira um novo token.");
+          resetToken();
         } else {
           githubStatus.textContent = "Erro ao salvar";
-          alert("Erro ao salvar no GitHub! Verifique o Token, Usuário e Nome do Repositório.");
+          alert(`Erro ao salvar no GitHub! Status: ${res.status}. Verifique o nome do repositório ("${GITHUB_CONFIG.repo}") e usuario.`);
         }
       } catch (e) {
         console.error(e);
