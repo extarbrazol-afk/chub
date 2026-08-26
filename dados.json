@@ -1,3 +1,36 @@
 {
-  "anotacao": "Sua anotação inicial..."
+  "nodeCount": 3,
+  "arrowCount": 1,
+  "zoomLevel": 1,
+  "panX": 0,
+  "panY": 0,
+  "nodes": [
+    {
+      "id": "node-1",
+      "left": "565px",
+      "top": "267.667px",
+      "width": "",
+      "height": "",
+      "transform": "",
+      "text": ""
+    },
+    {
+      "id": "node-2",
+      "left": "303px",
+      "top": "268px",
+      "width": "",
+      "height": "",
+      "transform": "",
+      "text": ""
+    }
+  ],
+  "arrows": [
+    {
+      "id": "arrow-1",
+      "fromNodeId": "node-1",
+      "fromDir": "left",
+      "toNodeId": "node-2",
+      "toDir": "right"
+    }
+  ]
 }
